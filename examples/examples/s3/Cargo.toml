@@ -19,6 +19,7 @@ assert_cmd = "2.0"
 predicates = "3.0.3"
 
 [dependencies]
+futures = "0.3"
 anyhow = "1.0.70"
 bytes = "1.4.0"
 http = "0.2.8"
@@ -35,6 +36,7 @@ aws-sdk-s3= { version = "1.28.0", path = "../../../sdk/s3", features = ["rt-toki
 aws-smithy-runtime= { version = "1.5.0", path = "../../../sdk/aws-smithy-runtime" }
 aws-smithy-runtime-api= { version = "1.6.0", path = "../../../sdk/aws-smithy-runtime-api", features = ["client"] }
 aws-smithy-types= { version = "1.1.9", path = "../../../sdk/aws-smithy-types", features = ["http-body-0-4-x"] }
+async-std = "1.12.0"
 
 [dependencies.sdk-examples-test-utils]
 path = "../../test-utils"
