@@ -9,7 +9,7 @@ use futures::executor::block_on;
 use async_std::task;
 
 
-async fn read_file_segment (i: usize, path: &str, block_size: usize, division: usize){
+async fn read_file_segment (i: usize, path: String, block_size: usize, division: usize){
 
     let start_thread = std::time::Instant::now();
     let mut thread_file = File::open(&path).expect("Unable to open file");
@@ -65,7 +65,8 @@ async fn main() {
     let mut tasks = vec![];
 
         for i in 0..threads {
-            tasks.push(read_file_segment(i,path,BLOCK_SIZE, division));
+            let task = task:: spawn(read_file_segment(i,path.to_string(),BLOCK_SIZE, division));
+            tasks.push(task);
         }
 
         join_all(tasks).await;
