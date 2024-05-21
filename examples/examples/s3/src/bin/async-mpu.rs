@@ -166,7 +166,7 @@ async fn main() {
 
     join_all(tasks).await;
 
-    dbg!(upload_parts);
+    dbg!(&upload_parts);
     let completed_multipart_upload: CompletedMultipartUpload = CompletedMultipartUpload::builder()
         .set_parts(Some((*upload_parts).clone()))
         .build();
