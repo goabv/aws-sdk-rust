@@ -115,13 +115,14 @@ async fn main() {
     let args: Vec<String> = args().collect();
     let path: &String = &args[1];
     let threads = (&args[2]).parse::<usize>().unwrap();
+    let block_size = (&args[3]).parse::<usize>().unwrap()*1024*1024;
     let length: usize = metadata(path)
         .expect("Unable to query file details")
         .len()
         .try_into()
         .expect("Couldn't convert len from u64 to usize");
 
-    const BLOCK_SIZE: usize = 16_777_216; //16M
+    //const BLOCK_SIZE: usize = 16_777_216; //16M
     //const THREADSCONST: usize = 10;
     // How much each thread should read
     let mut division: usize = ((length / threads) as f64).ceil() as usize;
@@ -164,7 +165,7 @@ async fn main() {
         let task = task::spawn(read_file_segment(
             i,
             path.to_string(),
-            BLOCK_SIZE,
+            block_size,
             division,
             client,
             bucket_name.to_string(),
