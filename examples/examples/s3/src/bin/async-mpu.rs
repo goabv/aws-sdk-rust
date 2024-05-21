@@ -1,9 +1,7 @@
 
 use std::time::Duration;
 use std::thread;
-use tokio::fs::File;
-use tokio::io::{self, AsyncReadExt, AsyncSeekExt};
-use std::fs::{metadata};
+use std::fs::{metadata, File};
 use std::io::{Read, Seek, SeekFrom};
 use std::env::args;
 use futures::future::join_all;
@@ -14,7 +12,6 @@ use aws_sdk_s3::error::DisplayErrorContext;
 use aws_sdk_s3::operation::{
     create_multipart_upload::CreateMultipartUploadOutput, get_object::GetObjectOutput,
 };
-
 use aws_sdk_s3::types::{CompletedMultipartUpload, CompletedPart};
 use aws_sdk_s3::{config::Region, Client as S3Client, Client};
 use aws_smithy_types::byte_stream::{ByteStream, Length};
@@ -27,7 +24,7 @@ use lazy_static::lazy_static;
 use uuid::Uuid;
 use std::sync::RwLock;
 use futures_util::AsyncWriteExt;
-use bytes::Bytes;
+
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
@@ -36,7 +33,7 @@ lazy_static! {
 async fn read_file_segment (i: usize, path: String, block_size: usize, division: usize, client: Client, bucket_name: String, key: String, upload_parts: Arc<Vec<CompletedPart>>, upload_id: Arc<String>){
 
     let start_thread = std::time::Instant::now();
-    let mut thread_file = File::open(&path).await.unwrap();
+    let mut thread_file = File::open(&path).expect("Unable to open file");
     let mut contents = vec![0_u8; block_size];
     // Can't be zero since that's the EOF condition from read()
     let mut read_length: usize = 1;
@@ -46,7 +43,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
     let start_offset = std::time::Instant::now();
     thread_file
         .seek(SeekFrom::Start(offset))
-        .await.unwrap();
+        .expect("Couldn't seek to position in file");
 
     //eprintln!("Thread = {}, Time={:?}", i, start_offset.elapsed());
     let start_content_read = std::time::Instant::now();
@@ -66,7 +63,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
         if read_total + block_size > division {
             contents.truncate(division - read_total);
         }
-        read_length = thread_file.read(&mut contents).await.unwrap();
+        read_length = thread_file.read(&mut contents).expect("Couldn't read file");
         let byte_stream = ByteStream::from(contents.clone());
 /*
         let byte_stream_data = byte_stream.collect().await.unwrap();
