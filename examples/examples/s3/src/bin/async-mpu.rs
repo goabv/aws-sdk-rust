@@ -57,15 +57,27 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
 
     let mut upload_parts_clone = &(*upload_parts);
     let mut part_number = (i*num_parts_per_div)+1;
+    let mut end_read: u128 = 0;
+    let mut end_upload_part_res: u128 = 0;
+    let mut end_upload_part_stack_push: u128 = 0;
+
     while (read_total < division) && (read_length != 0) {
         // Handle the case when the bytes remaining to be read are
         // less than the block size
         if read_total + block_size > division {
             contents.truncate(division - read_total);
         }
+
+        let start_read = std::time::Instant::now();
         read_length = thread_file.read(&mut contents).expect("Couldn't read file");
         let byte_stream = ByteStream::from(contents.clone());
-/*
+        end_read = end_read + start_read.elapsed().as_millis();
+
+
+
+
+        /*
+
         let byte_stream_data = byte_stream.collect().await.unwrap();
 
        // Calculate size
@@ -76,6 +88,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
         //eprintln!("upload_id {}, part_number {}, bucket_name {}, key {}",(*upload_id).clone(), part_number, bucket_name, key);
 
 
+        let start_upload_part_res = std::time::Instant::now();
         let upload_part_res = client
             .upload_part()
             .key(&key)
@@ -86,19 +99,24 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
             .send()
             .await
             .unwrap();
+        end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
 
+        let start_part_stack_push = std::time::Instant::now();
         GLOBAL_VEC.write().unwrap().push(
             CompletedPart::builder()
                 .e_tag(upload_part_res.e_tag.unwrap_or_default())
                 .part_number(part_number as i32)
                 .build(),
         );
+        end_upload_part_stack_push = end_upload_part_stack_push + start_part_stack_push.elapsed().as_millis();
 
 
 
         part_number = part_number + 1;
         read_total += read_length;
     }
+    println!("Thread Number = {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, end_read, end_upload_part_res, end_upload_part_stack_push);
+    println!("Total File Read Time: {}", end_read);
     //eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
     //eprintln!("Thread Content Read = {}, Total Bytes Read = {}, Time={:?}", i, read_total, start_content_read.elapsed());
     //eprintln!("Thread Number = {}, Time={:?}", i, start_thread.elapsed());
