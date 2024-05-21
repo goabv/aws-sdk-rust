@@ -45,7 +45,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
         .seek(SeekFrom::Start(offset))
         .expect("Couldn't seek to position in file");
 
-    eprintln!("Thread = {}, Time={:?}", i, start_offset.elapsed());
+    //eprintln!("Thread = {}, Time={:?}", i, start_offset.elapsed());
     let start_content_read = std::time::Instant::now();
 
 
@@ -99,9 +99,9 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
         part_number = part_number + 1;
         read_total += read_length;
     }
-    eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
-    eprintln!("Thread Content Read = {}, Total Bytes Read = {}, Time={:?}", i, read_total, start_content_read.elapsed());
-    eprintln!("Thread Number = {}, Time={:?}", i, start_thread.elapsed());
+    //eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
+    //eprintln!("Thread Content Read = {}, Total Bytes Read = {}, Time={:?}", i, read_total, start_content_read.elapsed());
+    //eprintln!("Thread Number = {}, Time={:?}", i, start_thread.elapsed());
 
 }
 
@@ -150,7 +150,7 @@ async fn main() {
     // snippet-end:[rust.example_code.s3.create_multipart_upload]
     let upload_id = Arc::new(multipart_upload_res.upload_id().unwrap());
     ///let upload_id = multipart_upload_res.upload_id().unwrap();
-    eprintln!("initial upload_id {}", upload_id);
+    //eprintln!("initial upload_id {}", upload_id);
     let upload_id = Arc::new(upload_id.to_string().clone());
     let mut upload_parts: Arc<Vec<CompletedPart>> = Arc::new(Vec::new());
     //let mut upload_parts = Vec::new();
