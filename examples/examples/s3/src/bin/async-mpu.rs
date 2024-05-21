@@ -20,12 +20,16 @@ use rand::{thread_rng, Rng};
 use s3_service::error::Error;
 use std::process;
 use std::sync::Arc;
+use lazy_static::lazy_static;
 use uuid::Uuid;
+use std::sync::RwLock;
 
+
+lazy_static! {
+    static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
+}
 
 async fn read_file_segment (i: usize, path: String, block_size: usize, division: usize, client: Client, bucket_name: String, key: String, upload_parts: Arc<Vec<CompletedPart>>, upload_id: Arc<String>){
-
-    let mut upload_parts: Vec<CompletedPart> = Vec::new();
 
     let start_thread = std::time::Instant::now();
     let mut thread_file = File::open(&path).expect("Unable to open file");
@@ -50,6 +54,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
         num_parts_per_div += 1;
     }
 
+    let mut upload_parts_clone = (*upload_parts).clone();
     let mut part_number = (i*num_parts_per_div)+1;
     while (read_total < division) && (read_length != 0) {
         // Handle the case when the bytes remaining to be read are
@@ -69,6 +74,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
 */
         //eprintln!("upload_id {}, part_number {}, bucket_name {}, key {}",(*upload_id).clone(), part_number, bucket_name, key);
 
+
         let upload_part_res = client
             .upload_part()
             .key(&key)
@@ -79,7 +85,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
             .send()
             .await
             .unwrap();
-        upload_parts.push(
+        upload_parts_clone.push(
             CompletedPart::builder()
                 .e_tag(upload_part_res.e_tag.unwrap_or_default())
                 .part_number(part_number as i32)
@@ -151,7 +157,7 @@ async fn main() {
         let client = client.clone();
 
         let upload_id = Arc::clone(&upload_id);
-        let upload_parts = Arc::clone(&upload_parts);
+        let mut upload_parts = Arc::clone(&upload_parts);
 
         let task = task::spawn(read_file_segment(
             i,
@@ -169,7 +175,7 @@ async fn main() {
 
     join_all(tasks).await;
 
-    dbg!(&upload_parts);
+    //dbg!(&upload_parts);
     let completed_multipart_upload: CompletedMultipartUpload = CompletedMultipartUpload::builder()
         .set_parts(Some((*upload_parts).clone()))
         .build();
