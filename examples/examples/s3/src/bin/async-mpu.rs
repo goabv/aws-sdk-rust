@@ -96,7 +96,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
 
 
 
-        let part_number = part_number + 1;
+        part_number = part_number + 1;
         read_total += read_length;
     }
     eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
