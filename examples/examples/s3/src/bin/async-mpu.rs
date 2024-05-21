@@ -108,7 +108,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    //tracing_subscriber::fmt::init();
     let start = std::time::Instant::now();
     // your code here
 
