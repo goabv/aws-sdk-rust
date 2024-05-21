@@ -87,10 +87,11 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
         );
 
 
-        eprintln!("upload part size {}", upload_parts.len());
+
         let part_number = part_number + 1;
         read_total += read_length;
     }
+    eprintln!("upload part size {}", upload_parts.len());
     eprintln!("Thread Content Read = {}, Total Bytes Read = {}, Time={:?}", i, read_total, start_content_read.elapsed());
     eprintln!("Thread Number = {}, Time={:?}", i, start_thread.elapsed());
 
