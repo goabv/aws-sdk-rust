@@ -131,7 +131,7 @@ async fn main() {
     let region_provider = RegionProviderChain::first_try(Region::new("us-east-2"));
     let region = region_provider.region().await.unwrap();
     let key = "test.dat".to_string();
-    // snippet-start:[rust.example_code.s3.create_multipart_upload]
+
     let multipart_upload_res: CreateMultipartUploadOutput = client
         .create_multipart_upload()
         .bucket(&bucket_name)
