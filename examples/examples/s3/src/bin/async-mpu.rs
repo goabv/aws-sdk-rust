@@ -67,7 +67,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
 
         println!("Size of ByteStream: {} bytes", size);
 */
-        eprintln!("upload_id {}, part_number {}, bucket_name {}, key {}",(*upload_id).clone(), part_number, bucket_name, key);
+        //eprintln!("upload_id {}, part_number {}, bucket_name {}, key {}",(*upload_id).clone(), part_number, bucket_name, key);
 
         let upload_part_res = client
             .upload_part()
@@ -136,17 +136,19 @@ async fn main() {
         .await
         .unwrap();
     // snippet-end:[rust.example_code.s3.create_multipart_upload]
-    //let upload_id = Arc::new(multipart_upload_res.upload_id().unwrap());
-    let upload_id = multipart_upload_res.upload_id().unwrap();
+    let upload_id = Arc::new(multipart_upload_res.upload_id().unwrap());
+    ///let upload_id = multipart_upload_res.upload_id().unwrap();
     eprintln!("initial upload_id {}", upload_id);
     let upload_id = Arc::new(upload_id.to_string().clone());
     let mut upload_parts: Arc<Vec<CompletedPart>> = Arc::new(Vec::new());
-
+    //let mut upload_parts = Vec::new();
     for i in 0..threads {
         //let client = Arc::clone(&client);
         let client = client.clone();
+
         let upload_id = Arc::clone(&upload_id);
         let upload_parts = Arc::clone(&upload_parts);
+
         let task = task::spawn(read_file_segment(
             i,
             path.to_string(),
@@ -164,7 +166,7 @@ async fn main() {
     join_all(tasks).await;
 
     let completed_multipart_upload: CompletedMultipartUpload = CompletedMultipartUpload::builder()
-        .set_parts(Some(upload_parts.to_vec()))
+        .set_parts(Some((*upload_parts).clone()))
         .build();
     // snippet-end:[rust.example_code.s3.upload_part.CompletedMultipartUpload]
 
