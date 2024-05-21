@@ -23,6 +23,7 @@ use std::sync::Arc;
 use lazy_static::lazy_static;
 use uuid::Uuid;
 use std::sync::RwLock;
+use futures_util::AsyncWriteExt;
 
 
 lazy_static! {
@@ -54,7 +55,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
         num_parts_per_div += 1;
     }
 
-    let mut upload_parts_clone = (*upload_parts).clone();
+    let mut upload_parts_clone = &(*upload_parts);
     let mut part_number = (i*num_parts_per_div)+1;
     while (read_total < division) && (read_length != 0) {
         // Handle the case when the bytes remaining to be read are
@@ -85,7 +86,8 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
             .send()
             .await
             .unwrap();
-        upload_parts_clone.push(
+
+        GLOBAL_VEC.write().unwrap().push(
             CompletedPart::builder()
                 .e_tag(upload_part_res.e_tag.unwrap_or_default())
                 .part_number(part_number as i32)
@@ -97,7 +99,7 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
         let part_number = part_number + 1;
         read_total += read_length;
     }
-    eprintln!("upload part size {}", upload_parts.len());
+    eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
     eprintln!("Thread Content Read = {}, Total Bytes Read = {}, Time={:?}", i, read_total, start_content_read.elapsed());
     eprintln!("Thread Number = {}, Time={:?}", i, start_thread.elapsed());
 
@@ -176,8 +178,10 @@ async fn main() {
     join_all(tasks).await;
 
     //dbg!(&upload_parts);
+    let mut vec : Vec<CompletedPart> = GLOBAL_VEC.write().unwrap().to_vec();
+    eprintln!("Final Part Vector Size: {}", vec.len());
     let completed_multipart_upload: CompletedMultipartUpload = CompletedMultipartUpload::builder()
-        .set_parts(Some((*upload_parts).clone()))
+        .set_parts(Some(vec))
         .build();
     // snippet-end:[rust.example_code.s3.upload_part.CompletedMultipartUpload]
 
