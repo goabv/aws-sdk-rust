@@ -86,6 +86,8 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
                 .build(),
         );
 
+
+        eprintln!("upload part size {}", upload_parts.len());
         let part_number = part_number + 1;
         read_total += read_length;
     }
