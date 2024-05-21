@@ -183,7 +183,10 @@ async fn main() {
 
     vec.sort_by(|a, b| a.part_number.cmp(&b.part_number));
 
-    eprintln!("Post Part Sort {:?}", vec);
+    for comppart in &vec {
+        eprintln!("Part Number {:?}",comppart.part_number);
+    }
+
     let completed_multipart_upload: CompletedMultipartUpload = CompletedMultipartUpload::builder()
         .set_parts(Some(vec))
         .build();
