@@ -180,6 +180,10 @@ async fn main() {
     //dbg!(&upload_parts);
     let mut vec : Vec<CompletedPart> = GLOBAL_VEC.write().unwrap().to_vec();
     eprintln!("Final Part Vector Size: {}", vec.len());
+
+    vec.sort_by(|a, b| a.part_number.cmp(&b.part_number));
+
+    eprintln!("Post Part Sort {:?}", vec);
     let completed_multipart_upload: CompletedMultipartUpload = CompletedMultipartUpload::builder()
         .set_parts(Some(vec))
         .build();
