@@ -27,7 +27,6 @@ use bytes::{Bytes, BytesMut};
 use futures_util::AsyncWriteExt;
 use tracing::{info, instrument};
 use tracing_subscriber;
-use tracing_flame::{FlameLayer, flush};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::Registry;
 
