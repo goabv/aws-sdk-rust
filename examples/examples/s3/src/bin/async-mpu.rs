@@ -142,7 +142,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
 async fn main() {
     let subscriber = tracing_subscriber::FmtSubscriber::new();
     // use that subscriber to process traces emitted after this point
-    tracing::subscriber::set_global_default(subscriber)?;
+    tracing::subscriber::set_global_default(subscriber).unwrap();
 
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
     let start = std::time::Instant::now();
