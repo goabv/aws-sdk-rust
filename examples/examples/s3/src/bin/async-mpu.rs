@@ -71,7 +71,7 @@ async fn read_file_segment (i: usize, path: String, part_size: usize, chunk_size
         let mut buffer = BytesMut::new();
 
         let mut read_total: usize = 0;
-        if (part_number == num_parts_per_div && rem_part_size>0){
+        if (part_counter == num_parts_per_div && rem_part_size>0){
             part_size=rem_part_size;
         }
 
