@@ -160,7 +160,7 @@ async fn main() {
     let mut last_part_size = length%part_size;
 
     if (last_part_size > 0 && last_part_size < MIN_PART_SIZE){
-        last_part_size =  last_part_size + MIN_PART_SIZE;
+        last_part_size =  last_part_size + part_size;
     }
     else if (last_part_size > 0 && last_part_size >= MIN_PART_SIZE){
         total_num_parts = total_num_parts + 1;
