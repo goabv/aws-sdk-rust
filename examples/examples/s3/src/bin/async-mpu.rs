@@ -134,6 +134,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         part_number = part_number + 1;
 
     }
+    info!("Inside my_function");
     //println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 
     //eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
@@ -146,11 +147,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
 
 
 #[tokio::main]
-async fn main(){
-    async_main().await;
-}
-
-async fn async_main() {
+async fn main() {
     //let subscriber: Subscriber = tracing_subscriber::FmtSubscriber::new();
     // use that subscriber to process traces emitted after this point
     //tracing::subscriber::set_global_default(subscriber)?;
