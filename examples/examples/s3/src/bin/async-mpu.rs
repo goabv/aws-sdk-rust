@@ -63,10 +63,13 @@ async fn read_file_segment (i: usize, path: String, part_size: usize, chunk_size
     let mut end_read: u128 = 0;
     let mut end_upload_part_res: u128 = 0;
     let mut end_upload_part_stack_push: u128 = 0;
+    let mut part_counter:usize = 1;
 
-    println!("Number of parts per division: {}",num_parts_per_div);
-    while (part_number <= num_parts_per_div){
+    println!("Thread Number: {}, Number of parts per division: {}",i,num_parts_per_div);
+
+    while (part_counter <= num_parts_per_div){
         let mut buffer = BytesMut::new();
+
         let mut read_total: usize = 0;
         if (part_number == num_parts_per_div && rem_part_size>0){
             part_size=rem_part_size;
@@ -88,7 +91,7 @@ async fn read_file_segment (i: usize, path: String, part_size: usize, chunk_size
             read_total += read_length;
             //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
         }
-        println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
+        println!("thread number {}, part number {}, Total Read {}, Part Size {}", i, part_number, read_total, part_size);
         let byte_stream = ByteStream::from(Bytes::from(buffer));
         end_read = end_read + start_read.elapsed().as_millis();
         let start_upload_part_res = std::time::Instant::now();
@@ -113,7 +116,7 @@ async fn read_file_segment (i: usize, path: String, part_size: usize, chunk_size
         );
         end_upload_part_stack_push = end_upload_part_stack_push + start_part_stack_push.elapsed().as_millis();
 
-
+        part_counter = part_counter + 1;
         part_number = part_number + 1;
 
     }
