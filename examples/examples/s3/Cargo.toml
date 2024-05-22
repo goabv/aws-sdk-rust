@@ -38,6 +38,7 @@ aws-smithy-runtime-api= { version = "1.6.0", path = "../../../sdk/aws-smithy-run
 aws-smithy-types= { version = "1.1.9", path = "../../../sdk/aws-smithy-types", features = ["http-body-0-4-x"] }
 async-std = { version = "1", features = ["attributes", "tokio1"] }
 lazy_static = "1.4.0"
+tracing-flame = "0.2"
 
 [dependencies.sdk-examples-test-utils]
 path = "../../test-utils"

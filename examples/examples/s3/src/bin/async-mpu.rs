@@ -25,7 +25,11 @@ use uuid::Uuid;
 use std::sync::RwLock;
 use bytes::{Bytes, BytesMut};
 use futures_util::AsyncWriteExt;
-
+use tracing::{info, instrument};
+use tracing_subscriber;
+use tracing_flame::{FlameLayer, flush};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::Registry;
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
@@ -126,7 +130,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         part_number = part_number + 1;
 
     }
-    println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
+    //println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 
     //eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
     //eprintln!("Thread Content Read = {}, Total Bytes Read = {}, Time={:?}", i, read_total, start_content_read.elapsed());
@@ -137,8 +141,10 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
 
 #[tokio::main]
 async fn main() {
-    //tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt::init();
 
+    let span = tracing::info_span!("main");
+    let _enter = span.enter();
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
     let start = std::time::Instant::now();
     // your code here
@@ -203,7 +209,7 @@ async fn main() {
         .unwrap();
     // snippet-end:[rust.example_code.s3.create_multipart_upload]
     let upload_id = Arc::new(multipart_upload_res.upload_id().unwrap());
-    ///let upload_id = multipart_upload_res.upload_id().unwrap();
+    //let upload_id = multipart_upload_res.upload_id().unwrap();
     //eprintln!("initial upload_id {}", upload_id);
     let upload_id = Arc::new(upload_id.to_string().clone());
     let mut upload_parts: Arc<Vec<CompletedPart>> = Arc::new(Vec::new());
