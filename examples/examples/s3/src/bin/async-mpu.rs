@@ -27,8 +27,10 @@ use bytes::{Bytes, BytesMut};
 use futures_util::AsyncWriteExt;
 use tracing::{info, instrument};
 use tracing_subscriber;
+use tracing_subscriber::fmt::Subscriber;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::Registry;
+
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
@@ -142,10 +144,10 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
 
 
 #[tokio::main]
-async fn main() {
-    let subscriber = tracing_subscriber::FmtSubscriber::new();
+async fn main() -> Result<(), ()>{
+    let subscriber: Subscriber = tracing_subscriber::FmtSubscriber::new();
     // use that subscriber to process traces emitted after this point
-    tracing::subscriber::set_global_default(subscriber).unwrap();
+    tracing::subscriber::set_global_default(subscriber)?;
 
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
     let start = std::time::Instant::now();
@@ -269,3 +271,4 @@ async fn main() {
 
     eprintln!("{:?}", start.elapsed());
 }
+
