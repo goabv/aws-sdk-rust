@@ -92,8 +92,9 @@ async fn read_file_segment (i: usize, path: String, part_size: usize, chunk_size
             //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
         }
         println!("thread number {}, part number {}, Total Read {}, Part Size {}", i, part_number, read_total, part_size);
-        let byte_stream = ByteStream::from(Bytes::from(buffer));
         end_read = end_read + start_read.elapsed().as_millis();
+        let byte_stream = ByteStream::from(Bytes::from(buffer));
+
         let start_upload_part_res = std::time::Instant::now();
         let upload_part_res = client
             .upload_part()
