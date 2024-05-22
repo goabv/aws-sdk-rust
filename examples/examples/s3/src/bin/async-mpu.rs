@@ -71,7 +71,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     let mut end_upload_part_stack_push: u128 = 0;
     let mut part_counter:usize = 1;
     let mut overall_read_total: usize = 0;
-    println!("Thread Number: {}, Number of parts per division: {}",i,num_parts_thread);
+    //println!("Thread Number: {}, Number of parts per division: {}",i,num_parts_thread);
 
     while (part_counter <= num_parts_thread){
         let mut buffer = BytesMut::new();
