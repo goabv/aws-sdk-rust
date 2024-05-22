@@ -152,16 +152,16 @@ async fn main() {
     // use that subscriber to process traces emitted after this point
     //tracing::subscriber::set_global_default(subscriber)?;
 
-    /*
+
     let subscriber = FmtSubscriber::builder()
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::DEBUG)
         .finish();
 
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
-        */
 
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
+
+    //env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
 
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
     let start = std::time::Instant::now();
@@ -284,6 +284,6 @@ async fn main() {
         .unwrap();
 
     eprintln!("{:?}", start.elapsed());
-    io::stdout().flush();
+
 }
 
