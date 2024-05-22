@@ -23,6 +23,7 @@ use std::sync::Arc;
 use lazy_static::lazy_static;
 use uuid::Uuid;
 use std::sync::RwLock;
+use bytes::{Bytes, BytesMut};
 use futures_util::AsyncWriteExt;
 
 
@@ -30,14 +31,16 @@ lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
 }
 
-async fn read_file_segment (i: usize, path: String, block_size: usize, division: usize, client: Client, bucket_name: String, key: String, upload_parts: Arc<Vec<CompletedPart>>, upload_id: Arc<String>){
+async fn read_file_segment (i: usize, path: String, part_size: usize, chunk_size: usize, division: usize, client: Client, bucket_name: String, key: String, upload_parts: Arc<Vec<CompletedPart>>, upload_id: Arc<String>){
 
+
+    let mut part_size = part_size;
     let start_thread = std::time::Instant::now();
     let mut thread_file = File::open(&path).expect("Unable to open file");
-    let mut contents = vec![0_u8; block_size];
+    let mut contents = vec![0_u8; chunk_size];
     // Can't be zero since that's the EOF condition from read()
     let mut read_length: usize = 1;
-    let mut read_total: usize = 0;
+
     let offset: u64 = (i * division) as u64;
     //division =division/ (i+1);
     let start_offset = std::time::Instant::now();
@@ -49,8 +52,8 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
     let start_content_read = std::time::Instant::now();
 
 
-    let mut num_parts_per_div = division/block_size;
-    let rem_part_size = division%block_size;
+    let mut num_parts_per_div = division/part_size;
+    let rem_part_size = division%part_size;
     if (rem_part_size>0) {
         num_parts_per_div += 1;
     }
@@ -61,33 +64,33 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
     let mut end_upload_part_res: u128 = 0;
     let mut end_upload_part_stack_push: u128 = 0;
 
-    while (read_total < division) && (read_length != 0) {
-        // Handle the case when the bytes remaining to be read are
-        // less than the block size
-        if read_total + block_size > division {
-            contents.truncate(division - read_total);
+
+    while (part_number <= num_parts_per_div){
+        let mut buffer = BytesMut::new();
+        let mut read_total: usize = 0;
+        if (part_number == num_parts_per_div && rem_part_size>0){
+            part_size=rem_part_size;
         }
 
         let start_read = std::time::Instant::now();
-        read_length = thread_file.read(&mut contents).expect("Couldn't read file");
-        let byte_stream = ByteStream::from(contents.clone());
+        while (read_total < part_size) && (read_length != 0) {
+            // Handle the case when the bytes remaining to be read are
+            // less than the block size
+            if read_total + part_size > part_size {
+                contents.truncate(part_size - read_total);
+            }
+
+
+            read_length = thread_file.read(&mut contents).expect("Couldn't read file");
+            buffer.extend_from_slice(&contents[..read_length]);
+            //let byte_stream = ByteStream::from(contents.clone());
+
+            read_total += read_length;
+            //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
+        }
+        //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
+        let byte_stream = ByteStream::from(Bytes::from(buffer));
         end_read = end_read + start_read.elapsed().as_millis();
-
-
-
-
-        /*
-
-        let byte_stream_data = byte_stream.collect().await.unwrap();
-
-       // Calculate size
-        let size = byte_stream_data.into_bytes().len();
-
-        println!("Size of ByteStream: {} bytes", size);
-*/
-        //eprintln!("upload_id {}, part_number {}, bucket_name {}, key {}",(*upload_id).clone(), part_number, bucket_name, key);
-
-
         let start_upload_part_res = std::time::Instant::now();
         let upload_part_res = client
             .upload_part()
@@ -111,12 +114,11 @@ async fn read_file_segment (i: usize, path: String, block_size: usize, division:
         end_upload_part_stack_push = end_upload_part_stack_push + start_part_stack_push.elapsed().as_millis();
 
 
-
         part_number = part_number + 1;
-        read_total += read_length;
+
     }
     println!("Thread Number = {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, end_read, end_upload_part_res, end_upload_part_stack_push);
-    println!("Total File Read Time: {}", end_read);
+
     //eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
     //eprintln!("Thread Content Read = {}, Total Bytes Read = {}, Time={:?}", i, read_total, start_content_read.elapsed());
     //eprintln!("Thread Number = {}, Time={:?}", i, start_thread.elapsed());
@@ -133,7 +135,8 @@ async fn main() {
     let args: Vec<String> = args().collect();
     let path: &String = &args[1];
     let threads = (&args[2]).parse::<usize>().unwrap();
-    let block_size = (&args[3]).parse::<usize>().unwrap()*1024*1024;
+    let part_size = (&args[3]).parse::<usize>().unwrap()*1024*1024;
+    let chunk_size= (&args[4]).parse::<usize>().unwrap()*1024*1024;
     let length: usize = metadata(path)
         .expect("Unable to query file details")
         .len()
@@ -183,7 +186,8 @@ async fn main() {
         let task = task::spawn(read_file_segment(
             i,
             path.to_string(),
-            block_size,
+            part_size,
+            chunk_size,
             division,
             client,
             bucket_name.to_string(),
