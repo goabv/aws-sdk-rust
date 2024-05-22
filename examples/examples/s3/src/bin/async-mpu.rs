@@ -67,7 +67,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     let mut end_upload_part_res: u128 = 0;
     let mut end_upload_part_stack_push: u128 = 0;
     let mut part_counter:usize = 1;
-
+    let mut overall_read_total: usize = 0;
     println!("Thread Number: {}, Number of parts per division: {}",i,num_parts_thread);
 
     while (part_counter <= num_parts_thread){
@@ -97,6 +97,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         }
         println!("thread number {}, part number {}, part count {}, Total Read {}, Part Size {}", i, part_number, part_counter, read_total, part_size);
         end_read = end_read + start_read.elapsed().as_millis();
+        overall_read_total = overall_read_total + read_total;
         let byte_stream = ByteStream::from(Bytes::from(buffer));
 
         let start_upload_part_res = std::time::Instant::now();
@@ -125,7 +126,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         part_number = part_number + 1;
 
     }
-    println!("Thread Number = {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, end_read, end_upload_part_res, end_upload_part_stack_push);
+    println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 
     //eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
     //eprintln!("Thread Content Read = {}, Total Bytes Read = {}, Time={:?}", i, read_total, start_content_read.elapsed());
