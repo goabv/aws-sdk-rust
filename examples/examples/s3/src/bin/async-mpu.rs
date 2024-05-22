@@ -31,48 +31,52 @@ lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
 }
 
-async fn read_file_segment (i: usize, path: String, part_size: usize, chunk_size: usize, division: usize, client: Client, bucket_name: String, key: String, upload_parts: Arc<Vec<CompletedPart>>, upload_id: Arc<String>){
+async fn read_file_segment (i: usize, path: String,  num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_parts: Arc<Vec<CompletedPart>>, upload_id: Arc<String>){
 
 
     let mut part_size = part_size;
+    let mut last_part_size = last_part_size;
     let start_thread = std::time::Instant::now();
     let mut thread_file = File::open(&path).expect("Unable to open file");
     let mut contents = vec![0_u8; chunk_size];
     // Can't be zero since that's the EOF condition from read()
-    let mut read_length: usize = 1;
 
-    let offset: u64 = (i * division) as u64;
+
+    //let offset: u64 = (i * division) as u64;
     //division =division/ (i+1);
     let start_offset = std::time::Instant::now();
     thread_file
-        .seek(SeekFrom::Start(offset))
+        .seek(SeekFrom::Start(offset as u64))
         .expect("Couldn't seek to position in file");
 
     //eprintln!("Thread = {}, Time={:?}", i, start_offset.elapsed());
     let start_content_read = std::time::Instant::now();
 
 
+    /*
     let mut num_parts_per_div = division/part_size;
     let rem_part_size = division%part_size;
     if (rem_part_size>0) {
         num_parts_per_div += 1;
     }
+    */
 
     let mut upload_parts_clone = &(*upload_parts);
-    let mut part_number = (i*num_parts_per_div)+1;
+    let mut part_number = (i*num_parts_thread)+1;
     let mut end_read: u128 = 0;
     let mut end_upload_part_res: u128 = 0;
     let mut end_upload_part_stack_push: u128 = 0;
     let mut part_counter:usize = 1;
 
-    println!("Thread Number: {}, Number of parts per division: {}, Bytes per division {}",i,num_parts_per_div, division);
+    println!("Thread Number: {}, Number of parts per division: {}",i,num_parts_thread);
 
-    while (part_counter <= num_parts_per_div){
+    while (part_counter <= num_parts_thread){
         let mut buffer = BytesMut::new();
-
         let mut read_total: usize = 0;
-        if (part_counter == num_parts_per_div && rem_part_size>0){
-            part_size=rem_part_size;
+        let mut read_length: usize = 1;
+
+        if (part_counter == num_parts_thread){
+            part_size=last_part_size;
         }
 
         let start_read = std::time::Instant::now();
@@ -133,6 +137,8 @@ async fn read_file_segment (i: usize, path: String, part_size: usize, chunk_size
 #[tokio::main]
 async fn main() {
     //tracing_subscriber::fmt::init();
+
+    const MIN_PART_SIZE: usize = 8*1024*1024; //8M
     let start = std::time::Instant::now();
     // your code here
 
@@ -150,7 +156,24 @@ async fn main() {
     //const BLOCK_SIZE: usize = 16_777_216; //16M
     //const THREADSCONST: usize = 10;
     // How much each thread should read
-    let mut division: usize = ((length / threads) as f64).ceil() as usize;
+    let mut total_num_parts = length/part_size;
+    let mut last_part_size = length%part_size;
+
+    if (last_part_size > 0 && last_part_size < MIN_PART_SIZE){
+        last_part_size =  last_part_size + MIN_PART_SIZE;
+    }
+    else if (last_part_size > 0 && last_part_size >= MIN_PART_SIZE){
+        total_num_parts = total_num_parts + 1;
+    }
+
+    let mut parts_per_thread = total_num_parts/threads;
+    let mut last_thread_num_parts = parts_per_thread +(total_num_parts%threads);
+
+
+
+
+
+    //let mut division: usize = ((length / threads) as f64).ceil() as usize;
 
     // Use scoped threads to keep things simpler
 
@@ -180,6 +203,7 @@ async fn main() {
     let upload_id = Arc::new(upload_id.to_string().clone());
     let mut upload_parts: Arc<Vec<CompletedPart>> = Arc::new(Vec::new());
     //let mut upload_parts = Vec::new();
+    let mut offset: usize= 0;
     for i in 0..threads {
         //let client = Arc::clone(&client);
         let client = client.clone();
@@ -187,12 +211,23 @@ async fn main() {
         let upload_id = Arc::clone(&upload_id);
         let mut upload_parts = Arc::clone(&upload_parts);
 
+        let mut last_part_size_for_thread = part_size;
+        let mut num_parts_thread = parts_per_thread;
+
+        if (i+1==threads){
+            last_part_size_for_thread = last_part_size;
+            num_parts_thread = last_thread_num_parts;
+        }
+
+        println!("Thread Number: {}, num_parts_thread {}, part_size {}, last_part_size_for_thread {}, chunk_size {}, offset {}",i,num_parts_thread,part_size,last_part_size_for_thread,chunk_size,offset);
         let task = task::spawn(read_file_segment(
             i,
             path.to_string(),
+            num_parts_thread,
             part_size,
+            last_part_size_for_thread,
             chunk_size,
-            division,
+            offset,
             client,
             bucket_name.to_string(),
             key.to_string(),
@@ -200,6 +235,7 @@ async fn main() {
             upload_id
         ));
         tasks.push(task);
+        offset = offset + (num_parts_thread*part_size);
     }
 
     join_all(tasks).await;
