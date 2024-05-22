@@ -166,6 +166,9 @@ async fn main() {
     else if (last_part_size > 0 && last_part_size >= MIN_PART_SIZE){
         total_num_parts = total_num_parts + 1;
     }
+    else {
+        last_part_size = part_size;
+    }
 
     let mut parts_per_thread = total_num_parts/threads;
     let mut remainder_parts = total_num_parts%threads;
