@@ -167,6 +167,7 @@ async fn main() {
     }
 
     let mut parts_per_thread = total_num_parts/threads;
+    let mut remainder_parts = total_num_parts%threads;
     let mut last_thread_num_parts = parts_per_thread +(total_num_parts%threads);
 
 
@@ -215,9 +216,13 @@ async fn main() {
         let mut last_part_size_for_thread = part_size;
         let mut num_parts_thread = parts_per_thread;
 
+        if (i<remainder_parts){
+            num_parts_thread = num_parts_thread + 1;
+        }
+
         if (i+1==threads){
             last_part_size_for_thread = last_part_size;
-            num_parts_thread = last_thread_num_parts;
+            //num_parts_thread = last_thread_num_parts;
         }
 
         println!("Thread Number: {}, num_parts_thread {}, part_size {}, last_part_size_for_thread {}, chunk_size {}, offset {}",i,num_parts_thread,part_size,last_part_size_for_thread,chunk_size,offset);
