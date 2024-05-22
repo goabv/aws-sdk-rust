@@ -24,6 +24,7 @@ use lazy_static::lazy_static;
 use uuid::Uuid;
 use std::sync::RwLock;
 use bytes::{Bytes, BytesMut};
+use env_logger::init;
 use futures_util::AsyncWriteExt;
 use tracing::{info, instrument};
 use tracing_subscriber;
@@ -160,7 +161,7 @@ async fn main() {
         .expect("setting default subscriber failed");
         */
 
-    env_logger::init();
+    init();
 
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
     let start = std::time::Instant::now();
