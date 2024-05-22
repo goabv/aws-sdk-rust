@@ -31,7 +31,7 @@ lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
 }
 
-async fn read_file_segment (i: usize, path: String,  num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_parts: Arc<Vec<CompletedPart>>, upload_id: Arc<String>){
+async fn read_file_segment (i: usize, path: String,  starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_parts: Arc<Vec<CompletedPart>>, upload_id: Arc<String>){
 
 
     let mut part_size = part_size;
@@ -62,7 +62,7 @@ async fn read_file_segment (i: usize, path: String,  num_parts_thread: usize, pa
     */
 
     let mut upload_parts_clone = &(*upload_parts);
-    let mut part_number = (i*num_parts_thread)+1;
+    let mut part_number = starting_part_number;
     let mut end_read: u128 = 0;
     let mut end_upload_part_res: u128 = 0;
     let mut end_upload_part_stack_push: u128 = 0;
@@ -204,6 +204,7 @@ async fn main() {
     let mut upload_parts: Arc<Vec<CompletedPart>> = Arc::new(Vec::new());
     //let mut upload_parts = Vec::new();
     let mut offset: usize= 0;
+    let mut starting_part_number = 1;
     for i in 0..threads {
         //let client = Arc::clone(&client);
         let client = client.clone();
@@ -223,6 +224,7 @@ async fn main() {
         let task = task::spawn(read_file_segment(
             i,
             path.to_string(),
+            starting_part_number,
             num_parts_thread,
             part_size,
             last_part_size_for_thread,
@@ -236,6 +238,7 @@ async fn main() {
         ));
         tasks.push(task);
         offset = offset + (num_parts_thread*part_size);
+        starting_part_number = starting_part_number + num_parts_thread;
     }
 
     join_all(tasks).await;
