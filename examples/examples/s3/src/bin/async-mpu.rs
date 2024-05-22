@@ -134,7 +134,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         part_number = part_number + 1;
 
     }
-    info!("Inside my_function");
+    //info!("Inside my_function");
     //println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 
     //eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
@@ -151,12 +151,16 @@ async fn main() {
     //let subscriber: Subscriber = tracing_subscriber::FmtSubscriber::new();
     // use that subscriber to process traces emitted after this point
     //tracing::subscriber::set_global_default(subscriber)?;
+
+    /*
     let subscriber = FmtSubscriber::builder()
         .with_max_level(tracing::Level::INFO)
         .finish();
 
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
+        */
+
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
     let start = std::time::Instant::now();
     // your code here
@@ -227,7 +231,7 @@ async fn main() {
         if (i+1==threads){
             last_part_size_for_thread = last_part_size;
         }
-        info!("Inside main");
+        //info!("Inside main");
         println!("Thread Number: {}, num_parts_thread {}, part_size {}, last_part_size_for_thread {}, chunk_size {}, offset {}",i,num_parts_thread,part_size,last_part_size_for_thread,chunk_size,offset);
         let task = task::spawn(read_file_segment(
             i,
