@@ -34,7 +34,7 @@ lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
 }
 
-async fn read_file_segment (i: usize, path: String,  starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_parts: Arc<Vec<CompletedPart>>, upload_id: Arc<String>){
+async fn read_file_segment (i: usize, path: String,  starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
 
     let mut part_size = part_size;
@@ -64,7 +64,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     }
     */
 
-    let mut upload_parts_clone = &(*upload_parts);
+    //let mut upload_parts_clone = &(*upload_parts);
     let mut part_number = starting_part_number;
     let mut end_read: u128 = 0;
     let mut end_upload_part_res: u128 = 0;
@@ -100,7 +100,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         }
         //println!("thread number {}, part number {}, part count {}, Total Read {}, Part Size {}", i, part_number, part_counter, read_total, part_size);
         end_read = end_read + start_read.elapsed().as_millis();
-        overall_read_total = overall_read_total + read_total;
+        //overall_read_total = overall_read_total + read_total;
         let byte_stream = ByteStream::from(Bytes::from(buffer));
 
         let start_upload_part_res = std::time::Instant::now();
@@ -140,10 +140,10 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    let subscriber = tracing_subscriber::FmtSubscriber::new();
+    // use that subscriber to process traces emitted after this point
+    tracing::subscriber::set_global_default(subscriber)?;
 
-    let span = tracing::info_span!("main");
-    let _enter = span.enter();
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
     let start = std::time::Instant::now();
     // your code here
@@ -159,9 +159,6 @@ async fn main() {
         .try_into()
         .expect("Couldn't convert len from u64 to usize");
 
-    //const BLOCK_SIZE: usize = 16_777_216; //16M
-    //const THREADSCONST: usize = 10;
-    // How much each thread should read
     let mut total_num_parts = length/part_size;
     let mut last_part_size = length%part_size;
 
@@ -177,18 +174,8 @@ async fn main() {
 
     let mut parts_per_thread = total_num_parts/threads;
     let mut remainder_parts = total_num_parts%threads;
-    let mut last_thread_num_parts = parts_per_thread +(total_num_parts%threads);
-
-
-
-
-
-    //let mut division: usize = ((length / threads) as f64).ceil() as usize;
-
-    // Use scoped threads to keep things simpler
 
     let mut tasks = vec![];
-
 
     let shared_config = aws_config::load_from_env().await;
     //let client : Arc<Client> = Arc::new(S3Client::new(&shared_config));
@@ -211,17 +198,12 @@ async fn main() {
     //let upload_id = multipart_upload_res.upload_id().unwrap();
     //eprintln!("initial upload_id {}", upload_id);
     let upload_id = Arc::new(upload_id.to_string().clone());
-    let mut upload_parts: Arc<Vec<CompletedPart>> = Arc::new(Vec::new());
-    //let mut upload_parts = Vec::new();
     let mut offset: usize= 0;
     let mut starting_part_number = 1;
     for i in 0..threads {
         //let client = Arc::clone(&client);
         let client = client.clone();
-
         let upload_id = Arc::clone(&upload_id);
-        let mut upload_parts = Arc::clone(&upload_parts);
-
         let mut last_part_size_for_thread = part_size;
         let mut num_parts_thread = parts_per_thread;
 
@@ -231,7 +213,6 @@ async fn main() {
 
         if (i+1==threads){
             last_part_size_for_thread = last_part_size;
-            //num_parts_thread = last_thread_num_parts;
         }
 
         println!("Thread Number: {}, num_parts_thread {}, part_size {}, last_part_size_for_thread {}, chunk_size {}, offset {}",i,num_parts_thread,part_size,last_part_size_for_thread,chunk_size,offset);
@@ -247,7 +228,6 @@ async fn main() {
             client,
             bucket_name.to_string(),
             key.to_string(),
-            upload_parts,
             upload_id
         ));
         tasks.push(task);
