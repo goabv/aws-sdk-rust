@@ -40,6 +40,7 @@ async-std = { version = "1", features = ["attributes", "tokio1"] }
 lazy_static = "1.4.0"
 tracing-flame = "0.2"
 env_logger = "0.11.3"
+tracing-logstash = "0.6.1"
 
 [dependencies.sdk-examples-test-utils]
 path = "../../test-utils"

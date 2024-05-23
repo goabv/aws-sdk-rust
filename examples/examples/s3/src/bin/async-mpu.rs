@@ -1,37 +1,26 @@
 
-use std::time::Duration;
-use std::thread;
+
 use std::fs::{metadata, File};
 use std::io::{Read, Seek, SeekFrom};
 use std::env::args;
 use futures::future::join_all;
-use futures::executor::block_on;
 use async_std::task;
 use aws_config::meta::region::RegionProviderChain;
-use aws_sdk_s3::error::DisplayErrorContext;
 use aws_sdk_s3::operation::{
     create_multipart_upload::CreateMultipartUploadOutput, get_object::GetObjectOutput,
 };
 use aws_sdk_s3::types::{CompletedMultipartUpload, CompletedPart};
 use aws_sdk_s3::{config::Region, Client as S3Client, Client};
 use aws_smithy_types::byte_stream::{ByteStream, Length};
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
-use s3_service::error::Error;
-use std::process;
 use std::sync::Arc;
 use lazy_static::lazy_static;
-use uuid::Uuid;
 use std::sync::RwLock;
 use bytes::{Bytes, BytesMut};
-use env_logger::init;
 use futures_util::AsyncWriteExt;
-use tracing::{info, instrument};
 use tracing_subscriber;
-use tracing_subscriber::fmt::Subscriber;
+use tracing_subscriber::{EnvFilter, FmtSubscriber, Registry};
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::{FmtSubscriber, Registry};
-use std::io::{self, Write};
+
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
@@ -60,14 +49,6 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     //eprintln!("Thread = {}, Time={:?}", i, start_offset.elapsed());
     let start_content_read = std::time::Instant::now();
 
-
-    /*
-    let mut num_parts_per_div = division/part_size;
-    let rem_part_size = division%part_size;
-    if (rem_part_size>0) {
-        num_parts_per_div += 1;
-    }
-    */
 
     //let mut upload_parts_clone = &(*upload_parts);
     let mut part_number = starting_part_number;
@@ -152,14 +133,29 @@ async fn main() {
     // use that subscriber to process traces emitted after this point
     //tracing::subscriber::set_global_default(subscriber)?;
 
+    let logger = tracing_logstash::Layer::default()
+        .event_format(tracing_logstash::logstash::LogstashFormat::default()
+            .with_constants(vec![
+                ("service.name", "tracing-logstash".to_owned()),
+            ])
+        );
 
+    let env_filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
+    let collector = Registry::default().with(logger).with(env_filter);
+
+    tracing::subscriber::set_global_default(collector).unwrap();
+
+    /*
     let subscriber = FmtSubscriber::builder()
         .with_max_level(tracing::Level::DEBUG)
         .finish();
 
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
-
+*/
 
     //env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
 
