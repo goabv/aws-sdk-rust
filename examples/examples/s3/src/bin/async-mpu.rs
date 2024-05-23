@@ -141,7 +141,7 @@ async fn main() {
         );
 
     let env_filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
+        .or_else(|_| EnvFilter::try_new("debug"))
         .unwrap();
 
     let collector = Registry::default().with(logger).with(env_filter);
