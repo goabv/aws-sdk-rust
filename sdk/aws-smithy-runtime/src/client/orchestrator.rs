@@ -225,7 +225,7 @@ async fn try_op(
     });
 
     // Serialization
-    let start_req_ser = std::time::Instant::now();
+    //let start_req_ser = std::time::Instant::now();
 
     ctx.enter_serialization_phase();
     {
@@ -238,11 +238,11 @@ async fn try_op(
         let request = halt_on_err!([ctx] => request_serializer.serialize_input(input, cfg).map_err(OrchestratorError::other));
         ctx.set_request(request);
     }
-    let end_req_res = start_req_ser.elapsed().as_millis();
-    println!("s3 Req Serialization Time (ms): {}",end_req_res);
+    //let end_req_res = start_req_ser.elapsed().as_millis();
+    //println!("s3 Req Serialization Time (ms): {}",end_req_res);
 
 
-    let start_load_mem = std::time::Instant::now();
+    //let start_load_mem = std::time::Instant::now();
     // Load the request body into memory if configured to do so
     if let Some(&LoadedRequestBody::Requested) = cfg.load::<LoadedRequestBody>() {
         debug!("loading request body into memory");
@@ -258,8 +258,8 @@ async fn try_op(
             .store_put(LoadedRequestBody::Loaded(loaded_body));
     }
 
-    let end_load_mem = start_load_mem.elapsed().as_millis();
-    println!("s3 Req Load Mem Time (ms): {}",end_load_mem);
+    //let end_load_mem = start_load_mem.elapsed().as_millis();
+    //println!("s3 Req Load Mem Time (ms): {}",end_load_mem);
 
     // Before transmit
     ctx.enter_before_transmit_phase();
@@ -326,10 +326,10 @@ async fn try_op(
             try_attempt(ctx, cfg, runtime_components, stop_point).await;
             let try_attempt_start_end = try_attempt_start.elapsed().as_millis();
             println!("s3 try upload attempt  {} (ms): {}",i,try_attempt_start_end);
-            let finally_attempt_start = std::time::Instant::now();
+            //let finally_attempt_start = std::time::Instant::now();
             finally_attempt(ctx, cfg, runtime_components).await;
-            let finally_attempt_start_end = finally_attempt_start.elapsed().as_millis();
-            println!("s3 finally upload attempt  {} (ms): {}",i,finally_attempt_start_end);
+            //let finally_attempt_start_end = finally_attempt_start.elapsed().as_millis();
+            //println!("s3 finally upload attempt  {} (ms): {}",i,finally_attempt_start_end);
             Result::<_, SdkError<Error, HttpResponse>>::Ok(())
         }
         .maybe_timeout(attempt_timeout_config)
