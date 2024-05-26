@@ -225,6 +225,8 @@ async fn try_op(
     });
 
     // Serialization
+    let start_req_ser = std::time::Instant::now();
+
     ctx.enter_serialization_phase();
     {
         let _span = debug_span!("serialization").entered();
@@ -236,7 +238,11 @@ async fn try_op(
         let request = halt_on_err!([ctx] => request_serializer.serialize_input(input, cfg).map_err(OrchestratorError::other));
         ctx.set_request(request);
     }
+    let end_req_res = start_req_ser.elapsed().as_millis();
+    println!("s3 Req Serialization Time (ms): {}",end_req_res);
 
+
+    let start_load_mem = std::time::Instant::now();
     // Load the request body into memory if configured to do so
     if let Some(&LoadedRequestBody::Requested) = cfg.load::<LoadedRequestBody>() {
         debug!("loading request body into memory");
@@ -251,6 +257,9 @@ async fn try_op(
         cfg.interceptor_state()
             .store_put(LoadedRequestBody::Loaded(loaded_body));
     }
+
+    let end_load_mem = start_load_mem.elapsed().as_millis();
+    println!("s3 Req Load Mem Time (ms): {}",end_load_mem);
 
     // Before transmit
     ctx.enter_before_transmit_phase();
@@ -299,13 +308,18 @@ async fn try_op(
         cfg.interceptor_state()
             .store_put::<RequestAttempts>(i.into());
         // Backoff time should not be included in the attempt timeout
+        let delay_start = std::time::Instant::now();
         if let Some((delay, sleep)) = retry_delay.take() {
             debug!("delaying for {delay:?}");
             sleep.await;
         }
+        let delay_end = delay_start.elapsed().as_millis();
+        println!("s3 Req Delay (ms): {}",delay_end);
+
         let attempt_timeout_config =
             MaybeTimeoutConfig::new(runtime_components, cfg, TimeoutKind::OperationAttempt);
         trace!(attempt_timeout_config = ?attempt_timeout_config);
+        let attempt_start = std::time::Instant::now();
         let maybe_timeout = async {
             debug!("beginning attempt #{i}");
             try_attempt(ctx, cfg, runtime_components, stop_point).await;
@@ -315,6 +329,8 @@ async fn try_op(
         .maybe_timeout(attempt_timeout_config)
         .await
         .map_err(|err| OrchestratorError::timeout(err.into_source().unwrap()));
+        let attempt_end = delay_start.elapsed().as_millis();
+        println!("s3 upload attempt {} (ms): {}",i,attempt_end);
 
         // We continue when encountering a timeout error. The retry classifier will decide what to do with it.
         continue_on_err!([ctx] => maybe_timeout);
