@@ -171,12 +171,15 @@ impl Sign for SigV4Signer {
             Self::settings(&operation_config)
         };
 
+
         let signing_params =
             Self::signing_params(settings, identity, &operation_config, request_time)?;
 
         let (signing_instructions, _signature) = {
             // A body that is already in memory can be signed directly. A body that is not in memory
             // (any sort of streaming body or presigned request) will be signed via UNSIGNED-PAYLOAD.
+            let signable_body = SignableBody::UnsignedPayload;
+            /*
             let signable_body = operation_config
                 .signing_options
                 .payload_override
@@ -191,7 +194,7 @@ impl Sign for SigV4Signer {
                         .map(SignableBody::Bytes)
                         .unwrap_or(SignableBody::UnsignedPayload)
                 });
-
+            */
             let signable_request = SignableRequest::new(
                 request.method(),
                 request.uri(),
