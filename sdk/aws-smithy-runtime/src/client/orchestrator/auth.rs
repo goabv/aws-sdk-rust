@@ -165,7 +165,8 @@ pub(super) async fn orchestrate_auth(
 
                         trace!("signing request");
                         let request = ctx.request_mut().expect("set during serialization");
-                        request.headers_mut().insert("x-amz-content-sha256", HeaderValue::from_static("UNSIGNED-PAYLOAD"));
+                        let start_signing = std::time::Instant::now();
+                        //request.headers_mut().insert("x-amz-content-sha256", HeaderValue::from_static("UNSIGNED-PAYLOAD"));
                         signer.sign_http_request(
                             request,
                             &identity,
@@ -173,8 +174,12 @@ pub(super) async fn orchestrate_auth(
                             runtime_components,
                             cfg,
                         )?;
+                        let end_signing = start_signing.elapsed().as_millis();
+                        println!("auth:s3 signing Time: {}",end_signing);
                         return Ok(());
                     }
+
+
                     Err(AuthOrchestrationError::MissingEndpointConfig) => {
                         explored.push(scheme_id, ExploreResult::MissingEndpointConfig);
                         continue;
