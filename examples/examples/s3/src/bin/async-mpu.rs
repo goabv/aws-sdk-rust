@@ -133,6 +133,7 @@ async fn main() {
     // use that subscriber to process traces emitted after this point
     //tracing::subscriber::set_global_default(subscriber)?;
 
+    /*
     let logger = tracing_logstash::Layer::default()
         .event_format(tracing_logstash::logstash::LogstashFormat::default()
             .with_constants(vec![
@@ -147,7 +148,7 @@ async fn main() {
     let collector = Registry::default().with(logger).with(env_filter);
 
     tracing::subscriber::set_global_default(collector).unwrap();
-
+*/
     /*
     let subscriber = FmtSubscriber::builder()
         .with_max_level(tracing::Level::DEBUG)
