@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+use http::header::HeaderValue;
 use crate::client::auth::no_auth::NO_AUTH_SCHEME_ID;
 use crate::client::identity::IdentityCache;
 use aws_smithy_runtime_api::box_error::BoxError;
@@ -164,7 +165,7 @@ pub(super) async fn orchestrate_auth(
 
                         trace!("signing request");
                         let request = ctx.request_mut().expect("set during serialization");
-                        request.headers_mut().insert("x-amz-content-sha256", "UNSIGNED-PAYLOAD".parse::<dyn Fn>().unwrap());
+                        request.headers_mut().insert("x-amz-content-sha256", HeaderValue::from_static("UNSIGNED-PAYLOAD"));
                         signer.sign_http_request(
                             request,
                             &identity,
