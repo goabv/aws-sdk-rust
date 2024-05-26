@@ -329,7 +329,7 @@ async fn try_op(
         .maybe_timeout(attempt_timeout_config)
         .await
         .map_err(|err| OrchestratorError::timeout(err.into_source().unwrap()));
-        let attempt_end = delay_start.elapsed().as_millis();
+        let attempt_end = attempt_start.elapsed().as_millis();
         println!("s3 upload attempt  {} (ms): {}",i,attempt_end);
 
         // We continue when encountering a timeout error. The retry classifier will decide what to do with it.
@@ -392,6 +392,8 @@ async fn try_attempt(
 
     // The connection consumes the request but we need to keep a copy of it
     // within the interceptor context, so we clone it here.
+    let start_transmit = std::time::Instant::now();
+
     ctx.enter_transmit_phase();
     let response = halt_on_err!([ctx] => {
         let request = ctx.take_request().expect("set during serialization");
@@ -416,6 +418,9 @@ async fn try_attempt(
         response_future.await.map_err(OrchestratorError::connector)
     });
     trace!(response = ?response, "received response from service");
+    let end_transmit = start_transmit.elapsed().as_millis();
+    println!("s3 Transmission Time: {}",end_transmit);
+
     ctx.set_response(response);
     ctx.enter_before_deserialization_phase();
 
@@ -424,6 +429,8 @@ async fn try_attempt(
         modify_before_deserialization(ctx, runtime_components, cfg);
         read_before_deserialization(ctx, runtime_components, cfg);
     });
+
+    let start_deser = std::time::Instant::now();
 
     ctx.enter_deserialization_phase();
     let output_or_error = async {
@@ -452,7 +459,8 @@ async fn try_attempt(
     .await;
     trace!(output_or_error = ?output_or_error);
     ctx.set_output_or_error(output_or_error);
-
+    let end_deser = start_deser.elapsed().as_millis();
+    println!("s3 Deserialization Time: {}",end_deser);
     ctx.enter_after_deserialization_phase();
     run_interceptors!(halt_on_err: read_after_deserialization(ctx, runtime_components, cfg));
 }
