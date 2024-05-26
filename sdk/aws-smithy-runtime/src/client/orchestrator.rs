@@ -375,40 +375,40 @@ async fn try_attempt(
     stop_point: StopPoint,
 ) {
 
-    let start_before_read_attempt = std::time::Instant::now();
+    //let start_before_read_attempt = std::time::Instant::now();
     run_interceptors!(halt_on_err: read_before_attempt(ctx, runtime_components, cfg));
-    let end_before_read_attempt = start_before_read_attempt.elapsed().as_millis();
-    println!("try_attempt: Before Read Attempt: {}",end_before_read_attempt);
+    //let end_before_read_attempt = start_before_read_attempt.elapsed().as_millis();
+    //println!("try_attempt: Before Read Attempt: {}",end_before_read_attempt);
 
 
-    let start_endpoint = std::time::Instant::now();
+    //let start_endpoint = std::time::Instant::now();
     halt_on_err!([ctx] => orchestrate_endpoint(ctx, runtime_components, cfg).await.map_err(OrchestratorError::other));
-    let end_endpoint = start_endpoint.elapsed().as_millis();
-    println!("try_attempt:Endpoint Calc Time: {}",end_endpoint);
+    //let end_endpoint = start_endpoint.elapsed().as_millis();
+    //println!("try_attempt:Endpoint Calc Time: {}",end_endpoint);
 
 
-    let start_signing = std::time::Instant::now();
+    //let start_signing = std::time::Instant::now();
     run_interceptors!(halt_on_err: {
         modify_before_signing(ctx, runtime_components, cfg);
         read_before_signing(ctx, runtime_components, cfg);
     });
-    let end_singing = start_signing.elapsed().as_millis();
-    println!("try_attempt:Signing Time: {}",end_singing);
+    //let end_singing = start_signing.elapsed().as_millis();
+    //println!("try_attempt:Signing Time: {}",end_singing);
 
     let start_auth = std::time::Instant::now();
     halt_on_err!([ctx] => orchestrate_auth(ctx, runtime_components, cfg).await.map_err(OrchestratorError::other));
     let end_auth = start_auth.elapsed().as_millis();
     println!("try_attempt:Auth Time: {}",end_auth);
 
-    let pre_transmit = std::time::Instant::now();
+    //let pre_transmit = std::time::Instant::now();
     run_interceptors!(halt_on_err: {
         read_after_signing(ctx, runtime_components, cfg);
         modify_before_transmit(ctx, runtime_components, cfg);
         read_before_transmit(ctx, runtime_components, cfg);
     });
 
-    let end_pre_transmit = pre_transmit.elapsed().as_millis();
-    println!("try_attempt:Pre-Transmission Time: {}",end_pre_transmit);
+    //let end_pre_transmit = pre_transmit.elapsed().as_millis();
+    //println!("try_attempt:Pre-Transmission Time: {}",end_pre_transmit);
 
     // Return early if a stop point is set for before transmit
     if let StopPoint::BeforeTransmit = stop_point {
@@ -441,7 +441,10 @@ async fn try_attempt(
             runtime_components,
             connector.call(request),
         );
+        //let start_resp_future = std::time::Instant::now();
         response_future.await.map_err(OrchestratorError::connector)
+        //let end_resp_future = start_resp_future.elapsed().as_millis();
+        //println!("try_attempt:Executing resp future: {}",end_resp_future);
     });
     trace!(response = ?response, "received response from service");
     let end_transmit = start_transmit.elapsed().as_millis();
@@ -449,7 +452,7 @@ async fn try_attempt(
 
     ctx.set_response(response);
 
-    let start_pre_deser = std::time::Instant::now();
+    //let start_pre_deser = std::time::Instant::now();
     ctx.enter_before_deserialization_phase();
 
     run_interceptors!(halt_on_err: {
@@ -457,10 +460,10 @@ async fn try_attempt(
         modify_before_deserialization(ctx, runtime_components, cfg);
         read_before_deserialization(ctx, runtime_components, cfg);
     });
-    let end_pre_deser = start_pre_deser.elapsed().as_millis();
-    println!("try_attempt:Pre-Deserialization Time: {}",end_pre_deser);
+    //let end_pre_deser = start_pre_deser.elapsed().as_millis();
+    //println!("try_attempt:Pre-Deserialization Time: {}",end_pre_deser);
 
-    let start_deser = std::time::Instant::now();
+    //let start_deser = std::time::Instant::now();
 
     ctx.enter_deserialization_phase();
     let output_or_error = async {
@@ -489,13 +492,13 @@ async fn try_attempt(
     .await;
     trace!(output_or_error = ?output_or_error);
     ctx.set_output_or_error(output_or_error);
-    let end_deser = start_deser.elapsed().as_millis();
-    println!("try_attempt:Deserialization Time: {}",end_deser);
-    let start_post_deser = std::time::Instant::now();
+    //let end_deser = start_deser.elapsed().as_millis();
+    //println!("try_attempt:Deserialization Time: {}",end_deser);
+    //let start_post_deser = std::time::Instant::now();
     ctx.enter_after_deserialization_phase();
     run_interceptors!(halt_on_err: read_after_deserialization(ctx, runtime_components, cfg));
-    let end_post_deser = start_post_deser.elapsed().as_millis();
-    println!("try_attempt:Post Deserialization Time: {}",end_post_deser);
+    //let end_post_deser = start_post_deser.elapsed().as_millis();
+    //println!("try_attempt:Post Deserialization Time: {}",end_post_deser);
 }
 
 #[instrument(skip_all, level = "debug")]
