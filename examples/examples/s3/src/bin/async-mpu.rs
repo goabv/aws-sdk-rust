@@ -27,6 +27,32 @@ lazy_static! {
 }
 
 
+async fn upload_single_part (client: Client, bucket_name: String, key: String, upload_id: Arc<String>,byte_stream: ByteStream, part_number: usize){
+
+    let upload_part_res = client
+        .upload_part()
+        .key(&key)
+        .bucket(&bucket_name)
+        .upload_id((*upload_id).clone())
+        .body(byte_stream)
+        .part_number(part_number as i32)
+        .send()
+        .await
+        .unwrap();
+    //        end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
+
+    //    let start_part_stack_push = std::time::Instant::now();
+    GLOBAL_VEC.write().unwrap().push(
+        CompletedPart::builder()
+            .e_tag(upload_part_res.e_tag.unwrap_or_default())
+            .part_number(part_number as i32)
+            .build(),
+        );
+
+}
+
+
+
 
 async fn read_file_segment (i: usize, path: String,  starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
@@ -36,21 +62,13 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     let start_thread = std::time::Instant::now();
     let mut thread_file = File::open(&path).expect("Unable to open file");
     let mut contents = vec![0_u8; chunk_size];
-    // Can't be zero since that's the EOF condition from read()
 
-
-    //let offset: u64 = (i * division) as u64;
-    //division =division/ (i+1);
-    let start_offset = std::time::Instant::now();
     thread_file
         .seek(SeekFrom::Start(offset as u64))
         .expect("Couldn't seek to position in file");
 
-    //eprintln!("Thread = {}, Time={:?}", i, start_offset.elapsed());
     let start_content_read = std::time::Instant::now();
 
-
-    //let mut upload_parts_clone = &(*upload_parts);
     let mut part_number = starting_part_number;
     let mut end_read: u128 = 0;
     let mut end_upload_part_res: u128 = 0;
@@ -59,13 +77,14 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     let mut overall_read_total: usize = 0;
     //println!("Thread Number: {}, Number of parts per division: {}",i,num_parts_thread);
 
-    while (part_counter <= num_parts_thread){
+    let mut tasks = vec![];
+    while (part_counter <= num_parts_thread) {
         let mut buffer = BytesMut::new();
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
 
-        if (part_counter == num_parts_thread){
-            part_size=last_part_size;
+        if (part_counter == num_parts_thread) {
+            part_size = last_part_size;
         }
 
         let start_read = std::time::Instant::now();
@@ -76,53 +95,47 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
                 contents.truncate(part_size - read_total);
             }
 
-
             read_length = thread_file.read(&mut contents).expect("Couldn't read file");
             buffer.extend_from_slice(&contents[..read_length]);
-            //let byte_stream = ByteStream::from(contents.clone());
-
             read_total += read_length;
-            //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
         }
-        //println!("thread number {}, part number {}, part count {}, Total Read {}, Part Size {}", i, part_number, part_counter, read_total, part_size);
-        end_read = end_read + start_read.elapsed().as_millis();
-        //overall_read_total = overall_read_total + read_total;
         let byte_stream = ByteStream::from(Bytes::from(buffer));
 
-        let start_upload_part_res = std::time::Instant::now();
-        let upload_part_res = client
-            .upload_part()
-            .key(&key)
-            .bucket(&bucket_name)
-            .upload_id((*upload_id).clone())
-            .body(byte_stream)
-            .part_number(part_number as i32)
-            .send()
-            .await
-            .unwrap();
-        end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
-
-        let start_part_stack_push = std::time::Instant::now();
-        GLOBAL_VEC.write().unwrap().push(
-            CompletedPart::builder()
-                .e_tag(upload_part_res.e_tag.unwrap_or_default())
+        let task = task::spawn(
+            upload_single_part(
+                client.clone(),
+                bucket_name.clone(),
+                key.clone(),
+                upload_id.clone(),
+                byte_stream,
+                part_number
+            ));
+        tasks.push(task);
+        /*
+            let upload_part_res = client
+                .upload_part()
+                .key(&key)
+                .bucket(&bucket_name)
+                .upload_id((*upload_id).clone())
+                .body(byte_stream)
                 .part_number(part_number as i32)
-                .build(),
-        );
-        end_upload_part_stack_push = end_upload_part_stack_push + start_part_stack_push.elapsed().as_millis();
+                .send()
+                .await
+                .unwrap();
+            GLOBAL_VEC.write().unwrap().push(
+                CompletedPart::builder()
+                    .e_tag(upload_part_res.e_tag.unwrap_or_default())
+                    .part_number(part_number as i32)
+                    .build(),
+            );*/
 
         part_counter = part_counter + 1;
         part_number = part_number + 1;
-
+        }
+    join_all(tasks).await;
     }
-    //info!("Inside my_function");
-    //println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 
-    //eprintln!("upload part size {}", GLOBAL_VEC.write().unwrap().len());
-    //eprintln!("Thread Content Read = {}, Total Bytes Read = {}, Time={:?}", i, read_total, start_content_read.elapsed());
-    //eprintln!("Thread Number = {}, Time={:?}", i, start_thread.elapsed());
 
-}
 
 
 
