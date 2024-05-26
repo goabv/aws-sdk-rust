@@ -322,8 +322,15 @@ async fn try_op(
         let attempt_start = std::time::Instant::now();
         let maybe_timeout = async {
             debug!("beginning attempt #{i}");
+            let try_attempt_start = std::time::Instant::now();
             try_attempt(ctx, cfg, runtime_components, stop_point).await;
+            let try_attempt_start_end = try_attempt_start.elapsed().as_millis();
+            println!("s3 try upload attempt  {} (ms): {}",i,try_attempt_start_end);
+            try_attempt(ctx, cfg, runtime_components, stop_point).await;
+            let finally_attempt_start = std::time::Instant::now();
             finally_attempt(ctx, cfg, runtime_components).await;
+            let finally_attempt_start_end = finally_attempt_start.elapsed().as_millis();
+            println!("s3 try upload attempt  {} (ms): {}",i,finally_attempt_start_end);
             Result::<_, SdkError<Error, HttpResponse>>::Ok(())
         }
         .maybe_timeout(attempt_timeout_config)
@@ -346,6 +353,7 @@ async fn try_op(
             ShouldAttempt::Yes => continue,
             // No, this request shouldn't be retried
             ShouldAttempt::No => {
+                debug!("a retry is either unnecessary or not possible, exiting attempt loop");
                 debug!("a retry is either unnecessary or not possible, exiting attempt loop");
                 break;
             }
@@ -436,7 +444,7 @@ async fn try_attempt(
         read_before_deserialization(ctx, runtime_components, cfg);
     });
     let end_pre_deser = start_pre_deser.elapsed().as_millis();
-    println!("s3 Deserialization Time: {}",end_pre_deser);
+    println!("s3 Pre-Deserialization Time: {}",end_pre_deser);
 
     let start_deser = std::time::Instant::now();
 
