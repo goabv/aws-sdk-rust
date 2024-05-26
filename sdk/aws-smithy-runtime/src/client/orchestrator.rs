@@ -374,16 +374,31 @@ async fn try_attempt(
     runtime_components: &RuntimeComponents,
     stop_point: StopPoint,
 ) {
+
+    let start_before_read_attempt = std::time::Instant::now();
     run_interceptors!(halt_on_err: read_before_attempt(ctx, runtime_components, cfg));
+    let end_before_read_attempt = start_before_read_attempt.elapsed().as_millis();
+    println!("try_attempt: Before Read Attempt: {}",end_before_read_attempt);
 
+
+    let start_endpoint = std::time::Instant::now();
     halt_on_err!([ctx] => orchestrate_endpoint(ctx, runtime_components, cfg).await.map_err(OrchestratorError::other));
+    let end_endpoint = start_endpoint.elapsed().as_millis();
+    println!("try_attempt:Endpoint Calc Time: {}",end_endpoint);
 
+
+    let start_signing = std::time::Instant::now();
     run_interceptors!(halt_on_err: {
         modify_before_signing(ctx, runtime_components, cfg);
         read_before_signing(ctx, runtime_components, cfg);
     });
+    let end_singing = start_signing.elapsed().as_millis();
+    println!("try_attempt:Signing Time: {}",end_singing);
 
+    let start_auth = std::time::Instant::now();
     halt_on_err!([ctx] => orchestrate_auth(ctx, runtime_components, cfg).await.map_err(OrchestratorError::other));
+    let end_auth = start_auth.elapsed().as_millis();
+    println!("try_attempt:Auth Time: {}",end_auth);
 
     let pre_transmit = std::time::Instant::now();
     run_interceptors!(halt_on_err: {
@@ -393,7 +408,7 @@ async fn try_attempt(
     });
 
     let end_pre_transmit = pre_transmit.elapsed().as_millis();
-    println!("s3 Pre-Transmission Time: {}",end_pre_transmit);
+    println!("try_attempt:Pre-Transmission Time: {}",end_pre_transmit);
 
     // Return early if a stop point is set for before transmit
     if let StopPoint::BeforeTransmit = stop_point {
@@ -430,7 +445,7 @@ async fn try_attempt(
     });
     trace!(response = ?response, "received response from service");
     let end_transmit = start_transmit.elapsed().as_millis();
-    println!("s3 Transmission Time: {}",end_transmit);
+    println!("try_attempt:Transmission Time: {}",end_transmit);
 
     ctx.set_response(response);
 
@@ -443,7 +458,7 @@ async fn try_attempt(
         read_before_deserialization(ctx, runtime_components, cfg);
     });
     let end_pre_deser = start_pre_deser.elapsed().as_millis();
-    println!("s3 Pre-Deserialization Time: {}",end_pre_deser);
+    println!("try_attempt:Pre-Deserialization Time: {}",end_pre_deser);
 
     let start_deser = std::time::Instant::now();
 
@@ -475,12 +490,12 @@ async fn try_attempt(
     trace!(output_or_error = ?output_or_error);
     ctx.set_output_or_error(output_or_error);
     let end_deser = start_deser.elapsed().as_millis();
-    println!("s3 Deserialization Time: {}",end_deser);
+    println!("try_attempt:Deserialization Time: {}",end_deser);
     let start_post_deser = std::time::Instant::now();
     ctx.enter_after_deserialization_phase();
     run_interceptors!(halt_on_err: read_after_deserialization(ctx, runtime_components, cfg));
     let end_post_deser = start_post_deser.elapsed().as_millis();
-    println!("s3 Post Deserialization Time: {}",end_post_deser);
+    println!("try_attempt:Post Deserialization Time: {}",end_post_deser);
 }
 
 #[instrument(skip_all, level = "debug")]
