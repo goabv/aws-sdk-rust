@@ -166,7 +166,7 @@ pub(super) async fn orchestrate_auth(
                         trace!("signing request");
                         let request = ctx.request_mut().expect("set during serialization");
                         let start_signing = std::time::Instant::now();
-                        //request.headers_mut().insert("x-amz-content-sha256", HeaderValue::from_static("UNSIGNED-PAYLOAD"));
+                        request.headers_mut().insert("x-amz-content-sha256", HeaderValue::from_static("UNSIGNED-PAYLOAD"));
                         signer.sign_http_request(
                             request,
                             &identity,
