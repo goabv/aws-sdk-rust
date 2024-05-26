@@ -326,11 +326,10 @@ async fn try_op(
             try_attempt(ctx, cfg, runtime_components, stop_point).await;
             let try_attempt_start_end = try_attempt_start.elapsed().as_millis();
             println!("s3 try upload attempt  {} (ms): {}",i,try_attempt_start_end);
-            try_attempt(ctx, cfg, runtime_components, stop_point).await;
             let finally_attempt_start = std::time::Instant::now();
             finally_attempt(ctx, cfg, runtime_components).await;
             let finally_attempt_start_end = finally_attempt_start.elapsed().as_millis();
-            println!("s3 try upload attempt  {} (ms): {}",i,finally_attempt_start_end);
+            println!("s3 finally upload attempt  {} (ms): {}",i,finally_attempt_start_end);
             Result::<_, SdkError<Error, HttpResponse>>::Ok(())
         }
         .maybe_timeout(attempt_timeout_config)
