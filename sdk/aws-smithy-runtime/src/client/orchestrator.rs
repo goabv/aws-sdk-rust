@@ -159,7 +159,7 @@ pub async fn invoke_with_stop_point(
             if !ctx.is_failed() {
                 let start_upload_part_res = std::time::Instant::now();
                 try_op(&mut ctx, cfg, &runtime_components, stop_point).await;
-                let end_upload_part_res = start_upload_part_res.elapsed().as_nanos();
+                let end_upload_part_res = start_upload_part_res.elapsed().as_millis();
                 println!("s3 Operation Time: {}",end_upload_part_res);
             }
             finally_op(&mut ctx, cfg, &runtime_components).await;
