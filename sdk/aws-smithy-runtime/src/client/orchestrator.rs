@@ -330,7 +330,7 @@ async fn try_op(
         .await
         .map_err(|err| OrchestratorError::timeout(err.into_source().unwrap()));
         let attempt_end = delay_start.elapsed().as_millis();
-        println!("s3 upload attempt {} (ms): {}",i,attempt_end);
+        println!("s3 upload attempt  {} (ms): {}",i,attempt_end);
 
         // We continue when encountering a timeout error. The retry classifier will decide what to do with it.
         continue_on_err!([ctx] => maybe_timeout);
