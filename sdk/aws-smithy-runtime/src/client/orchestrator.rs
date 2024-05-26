@@ -411,12 +411,12 @@ async fn try_attempt(
     //println!("try_attempt:Pre-Transmission Time: {}",end_pre_transmit);
 
 
-
+/*
     let req = ctx.request_mut().expect("testing headers");
     for value in req.headers_mut().into_iter() {
         dbg!(value);
     }
-
+*/
 
     // Return early if a stop point is set for before transmit
     if let StopPoint::BeforeTransmit = stop_point {
