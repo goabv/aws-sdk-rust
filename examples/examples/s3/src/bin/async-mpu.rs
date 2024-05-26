@@ -25,7 +25,7 @@ use tracing_subscriber::layer::SubscriberExt;
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
 }
-
+//static mut end_upload_part_res: u128 =0;
 
 
 async fn read_file_segment (i: usize, path: String,  starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
@@ -54,7 +54,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     let mut part_number = starting_part_number;
     let mut end_read: u128 = 0;
     let mut end_upload_part_res: u128 = 0;
-    let mut end_upload_part_stack_push: u128 = 0;
+    //let mut end_upload_part_stack_push: u128 = 0;
     let mut part_counter:usize = 1;
     let mut overall_read_total: usize = 0;
     //println!("Thread Number: {}, Number of parts per division: {}",i,num_parts_thread);
@@ -100,16 +100,15 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
             .send()
             .await
             .unwrap();
-        end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
 
-        let start_part_stack_push = std::time::Instant::now();
+
         GLOBAL_VEC.write().unwrap().push(
             CompletedPart::builder()
                 .e_tag(upload_part_res.e_tag.unwrap_or_default())
                 .part_number(part_number as i32)
                 .build(),
         );
-        end_upload_part_stack_push = end_upload_part_stack_push + start_part_stack_push.elapsed().as_millis();
+        end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
 
         part_counter = part_counter + 1;
         part_number = part_number + 1;

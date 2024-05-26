@@ -145,6 +145,7 @@ pub async fn invoke_with_stop_point(
 
         let mut ctx = InterceptorContext::new(input);
 
+
         let runtime_components = apply_configuration(&mut ctx, cfg, runtime_plugins)
             .map_err(SdkError::construction_failure)?;
         trace!(runtime_components = ?runtime_components);
@@ -156,7 +157,10 @@ pub async fn invoke_with_stop_point(
             // If running the pre-execution interceptors failed, then we skip running the op and run the
             // final interceptors instead.
             if !ctx.is_failed() {
+                let start_upload_part_res = std::time::Instant::now();
                 try_op(&mut ctx, cfg, &runtime_components, stop_point).await;
+                let end_upload_part_res = start_upload_part_res.elapsed().as_nanos();
+                println!("s3 Operation Time: {}",end_upload_part_res);
             }
             finally_op(&mut ctx, cfg, &runtime_components).await;
             if ctx.is_failed() {
