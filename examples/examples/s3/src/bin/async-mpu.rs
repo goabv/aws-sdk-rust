@@ -1,9 +1,9 @@
 
-
 use std::fs::{metadata, File};
 use std::io::{Read, Seek, SeekFrom};
 use std::env::args;
 use futures::future::join_all;
+use hyper::Body;
 use async_std::task;
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_s3::operation::{
@@ -15,10 +15,8 @@ use aws_smithy_types::byte_stream::{ByteStream, Length};
 use std::sync::Arc;
 use lazy_static::lazy_static;
 use std::sync::RwLock;
-use bytes::{Bytes, BytesMut};
 use futures_util::AsyncWriteExt;
 use tracing_subscriber;
-use std::slice;
 use hyper::client::HttpConnector;
 use hyper::Client as HyperClient;
 use tracing_subscriber::{EnvFilter, FmtSubscriber, Registry};
@@ -229,13 +227,13 @@ async fn main() {
 
     let shared_config = aws_config::load_from_env().await;
 
-    let http_client = create_custom_http_connector();
+    let hyper_connector = create_custom_http_connector();
+    let http_client = Arc::new(hyper::Client::builder().build(hyper_connector));
 
     let s3_config = Config::builder()
         .region(shared_config.region().cloned())
         .http_client(http_client)
         .build();
-
 
     /*
     let mut signing_settings = SigningSettings::default();
