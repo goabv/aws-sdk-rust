@@ -99,7 +99,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
 
 
         let start_upload_part_res = std::time::Instant::now();
-        /*
+
         let upload_part_res = client
             .upload_part()
             .key(&key)
@@ -119,7 +119,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
                 .build(),
         );
 
-         */
+
         end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
 
         part_counter = part_counter + 1;
@@ -223,7 +223,7 @@ async fn main() {
     let region = region_provider.region().await.unwrap();
     let key = "test.dat".to_string();
 
-    /*
+
     let multipart_upload_res: CreateMultipartUploadOutput = client
         .create_multipart_upload()
         .bucket(&bucket_name)
@@ -233,7 +233,7 @@ async fn main() {
         .unwrap();
     let upload_id = Arc::new(multipart_upload_res.upload_id().unwrap());
     let upload_id = Arc::new(upload_id.to_string().clone());
-    */
+
 
     let upload_id = Arc::new("XXX".to_string().clone());
 
@@ -287,7 +287,7 @@ async fn main() {
         .set_parts(Some(vec))
         .build();
 
-    /*
+
     let _complete_multipart_upload_res = client
         .complete_multipart_upload()
         .bucket(&bucket_name)
@@ -297,7 +297,7 @@ async fn main() {
         .send()
         .await
         .unwrap();
-*/
+
     eprintln!("{:?}", start.elapsed());
 
 }
