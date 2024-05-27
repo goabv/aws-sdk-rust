@@ -108,7 +108,10 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
             byte_stream = ByteStream::from(Bytes::from(buffer));
         }
         else {
-            byte_stream = ByteStream::from(contents.clone());
+            unsafe{
+                byte_stream = ByteStream::from(contents);
+            }
+
         }
 
 
