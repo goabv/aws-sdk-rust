@@ -57,13 +57,14 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     //println!("Thread Number: {}, Number of parts per division: {}",i,num_parts_thread);
 
     while (part_counter <= num_parts_thread){
-        let mut buffer = BytesMut::new();
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
 
         if (part_counter == num_parts_thread){
             part_size=last_part_size;
         }
+
+        let mut buffer = Vec::with_capacity(part_size);
 
         let start_read = std::time::Instant::now();
         while (read_total < part_size) && (read_length != 0) {
