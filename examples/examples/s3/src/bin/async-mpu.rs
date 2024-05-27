@@ -35,7 +35,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     let mut last_part_size = last_part_size;
     let start_thread = std::time::Instant::now();
     let mut thread_file = File::open(&path).expect("Unable to open file");
-    let mut contents = vec![0_u8; chunk_size];
+    //let mut contents = vec![0_u8; chunk_size];
     // Can't be zero since that's the EOF condition from read()
 
 
@@ -59,29 +59,38 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     while (part_counter <= num_parts_thread){
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
-        //let mut contents = vec![0_u8; chunk_size];
-        //let mut contents = Vec::with_capacity(chunk_size);
+        let mut contents = Vec::with_capacity(chunk_size);
         if (part_counter == num_parts_thread){
             part_size=last_part_size;
         }
 
         let mut buffer = Vec::with_capacity(part_size);
-        //let byte_stream:ByteStream;
+        let byte_stream:ByteStream;
 
         let start_read = std::time::Instant::now();
+
+        read_length = chunk_size;
         while (read_total < part_size) && (read_length != 0) {
             // Handle the case when the bytes remaining to be read are
             // less than the block size
 
+
             if read_total + chunk_size > part_size {
                 contents.truncate(part_size - read_total);
-
+                read_length = part_size - read_total;
             }
-            read_length = thread_file.read(&mut contents).expect("Couldn't read file");
 
-            //if (chunk_size!=part_size){
+
+            unsafe {
+                contents.set_len(read_length); // Temporarily set the length for read_exact
+                thread_file.read_exact(&mut contents)?;
+            }
+
+            //read_length = thread_file.read(&mut contents).expect("Couldn't read file");
+
+            if (chunk_size!=part_size){
                 buffer.extend_from_slice(&contents[..read_length]);
-            //}
+            }
 
             read_total += read_length;
             //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
@@ -91,13 +100,13 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         //overall_read_total = overall_read_total + read_total;
 
 
-        //if (chunk_size!=part_size){
+        if (chunk_size!=part_size){
             let byte_stream = ByteStream::from(buffer);
-        //}
-            /*
+        }
+
         else {
-                byte_stream = ByteStream::from(contents.clone());
-        }*/
+                byte_stream = ByteStream::from(contents);
+        }
 
         let start_upload_part_res = std::time::Instant::now();
 
