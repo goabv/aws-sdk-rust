@@ -59,7 +59,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     while (part_counter <= num_parts_thread){
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
-        let mut contents = vec![0_u8; chunk_size];
+        let mut contents = Vec::with_capacity(chunk_size);
         if (part_counter == num_parts_thread){
             part_size=last_part_size;
         }
