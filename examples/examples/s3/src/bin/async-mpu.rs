@@ -76,8 +76,13 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
 
 
             read_length = thread_file.read(&mut contents).expect("Couldn't read file");
-            buffer.extend_from_slice(&contents[..read_length]);
+
+            if (chunk_size!=part_size){
+                buffer.extend_from_slice(&contents[..read_length]);
+            }
+
             //let byte_stream = ByteStream::from(contents.clone());
+
 
             read_total += read_length;
             //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
@@ -85,7 +90,15 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         //println!("thread number {}, part number {}, part count {}, Total Read {}, Part Size {}", i, part_number, part_counter, read_total, part_size);
         end_read = end_read + start_read.elapsed().as_millis();
         //overall_read_total = overall_read_total + read_total;
-        let byte_stream = ByteStream::from(Bytes::from(buffer));
+
+
+        if (chunk_size!=part_size){
+            let byte_stream = ByteStream::from(Bytes::from(buffer));
+        }
+        else{
+            let byte_stream = ByteStream::from(contents);
+        }
+
 
 
         let start_upload_part_res = std::time::Instant::now();
