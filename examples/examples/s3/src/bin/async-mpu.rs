@@ -101,11 +101,11 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
 
 
         if (chunk_size!=part_size){
-            let byte_stream = ByteStream::from(buffer);
+            byte_stream = ByteStream::from(buffer);
         }
 
         else {
-                byte_stream = ByteStream::from(contents);
+            byte_stream = ByteStream::from(contents);
         }
 
         let start_upload_part_res = std::time::Instant::now();
