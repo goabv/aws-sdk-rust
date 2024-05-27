@@ -235,7 +235,6 @@ async fn main() {
     let upload_id = Arc::new(upload_id.to_string().clone());
 
 
-    let upload_id = Arc::new("XXX".to_string().clone());
 
     let mut offset: usize= 0;
     let mut starting_part_number = 1;
