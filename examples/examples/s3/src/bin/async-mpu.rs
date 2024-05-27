@@ -83,7 +83,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
 
             unsafe {
                 contents.set_len(read_length); // Temporarily set the length for read_exact
-                thread_file.read_exact(&mut contents)?;
+                thread_file.read_exact(&mut contents).unwrap();
             }
 
             //read_length = thread_file.read(&mut contents).expect("Couldn't read file");
