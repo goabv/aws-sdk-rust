@@ -88,7 +88,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
             //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
         }
         //println!("thread number {}, part number {}, part count {}, Total Read {}, Part Size {}", i, part_number, part_counter, read_total, part_size);
-        end_read = end_read + start_read.elapsed().as_millis();
+        end_read = end_read +  start_read.elapsed().as_millis();
         //overall_read_total = overall_read_total + read_total;
 
         let byte_stream:ByteStream;
