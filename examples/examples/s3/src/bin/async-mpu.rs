@@ -236,7 +236,7 @@ async fn main() {
     // Create the S3 client with the custom HTTP client
     let s3_config = Config::builder()
         .region(shared_config.region().cloned())
-        .http_connector(hyper_client)
+        .http_client(hyper_client)
         .build();
 
     let client = Client::from_conf(s3_config);
