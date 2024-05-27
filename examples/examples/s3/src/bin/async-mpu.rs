@@ -103,12 +103,12 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         end_read = end_read +  start_read.elapsed().as_millis();
         //overall_read_total = overall_read_total + read_total;
 
-        let content = Arc::new(&contents);
+
         if (chunk_size!=part_size){
             byte_stream = ByteStream::from(Bytes::from(buffer));
         }
         else {
-            byte_stream = ByteStream::from(*content);
+            byte_stream = ByteStream::from(contents.clone());
         }
 
 
