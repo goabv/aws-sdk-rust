@@ -212,6 +212,7 @@ async fn main() {
     let region = region_provider.region().await.unwrap();
     let key = "test.dat".to_string();
 
+    /*
     let multipart_upload_res: CreateMultipartUploadOutput = client
         .create_multipart_upload()
         .bucket(&bucket_name)
@@ -219,11 +220,12 @@ async fn main() {
         .send()
         .await
         .unwrap();
-    // snippet-end:[rust.example_code.s3.create_multipart_upload]
     let upload_id = Arc::new(multipart_upload_res.upload_id().unwrap());
-    //let upload_id = multipart_upload_res.upload_id().unwrap();
-    //eprintln!("initial upload_id {}", upload_id);
     let upload_id = Arc::new(upload_id.to_string().clone());
+    */
+
+    let upload_id = Arc::new("XXX".to_string().clone());
+
     let mut offset: usize= 0;
     let mut starting_part_number = 1;
     for i in 0..threads {
@@ -269,17 +271,12 @@ async fn main() {
 
     vec.sort_by(|a, b| a.part_number.cmp(&b.part_number));
 
-    /*
-    for comppart in &vec {
-        eprintln!("Part Number {:?}",comppart.part_number);
-    }
-*/
+
     let completed_multipart_upload: CompletedMultipartUpload = CompletedMultipartUpload::builder()
         .set_parts(Some(vec))
         .build();
-    // snippet-end:[rust.example_code.s3.upload_part.CompletedMultipartUpload]
 
-    // snippet-start:[rust.example_code.s3.complete_multipart_upload]
+    /*
     let _complete_multipart_upload_res = client
         .complete_multipart_upload()
         .bucket(&bucket_name)
@@ -289,7 +286,7 @@ async fn main() {
         .send()
         .await
         .unwrap();
-
+*/
     eprintln!("{:?}", start.elapsed());
 
 }
