@@ -82,7 +82,7 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
             unsafe {
                 // Create a slice from the uninitialized part of the buffer
                 let buffer_slice = slice::from_raw_parts_mut(contents.as_mut_ptr(), read_length);
-                thread_file.read_exact(buffer_slice)?;
+                thread_file.read_exact(buffer_slice).unwrap();
 
                 // Set the length of the buffer to the number of bytes read
                 contents.set_len(read_length);
