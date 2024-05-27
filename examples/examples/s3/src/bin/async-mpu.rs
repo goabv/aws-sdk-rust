@@ -228,7 +228,7 @@ async fn main() {
     let shared_config = aws_config::load_from_env().await;
 
     let hyper_connector = create_custom_http_connector();
-    let http_client = hyper::Client::builder().pool_max_idle_per_host(100).build();
+    let http_client = hyper::Client::builder().pool_max_idle_per_host(100).build_http();
 
     let s3_config = Config::builder()
         .region(shared_config.region().cloned())
