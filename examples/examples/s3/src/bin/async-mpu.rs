@@ -233,7 +233,7 @@ async fn main() {
 
     let s3_config = Config::builder()
         .region(shared_config.region().cloned())
-        .http_client(Arc::new(http_client))
+        .http_client(http_client)
         .build();
 
 
