@@ -108,18 +108,8 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
             byte_stream = ByteStream::from(Bytes::from(buffer));
         }
         else {
-            println!("Inside shallow copy code section");
-            let shallow_copy: Vec<u8> = unsafe {
-                // Get raw parts of the original vector
-                 let (ptr, len, cap) = (contents.as_ptr(), contents.len(), contents.capacity());
-
-                // Create a new vector from the raw parts
-                Vec::from_raw_parts(ptr as *mut u8, len, cap)
-            };
-                byte_stream = ByteStream::from(shallow_copy);
+                byte_stream = ByteStream::from(contents.clone());
         }
-
-
 
         let start_upload_part_res = std::time::Instant::now();
 
