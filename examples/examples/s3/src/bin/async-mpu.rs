@@ -227,25 +227,19 @@ async fn main() {
 
     let shared_config = aws_config::load_from_env().await;
 
-    let hyper_connector = create_custom_http_connector();
-    let http_client = hyper::Client::builder().pool_max_idle_per_host(100).build_http();
 
+    let hyper_client = create_custom_http_connector();
+
+    // Wrap the Hyper client in a Smithy adapter
+
+
+    // Create the S3 client with the custom HTTP client
     let s3_config = Config::builder()
         .region(shared_config.region().cloned())
-        .http_client(http_client)
+        .http_connector(hyper_client)
         .build();
 
-    /*
-    let mut signing_settings = SigningSettings::default();
-    signing_settings. = true;
-
-    let s3_config = Config::builder()
-        .region(shared_config.region().cloned())
-        .signing_settings(signing_settings)
-        .build();
-*/
-
-    let client : Client = Client::from_conf(s3_config);
+    let client = Client::from_conf(s3_config);
 
     //let client : Client = S3Client::new(&shared_config);
 
