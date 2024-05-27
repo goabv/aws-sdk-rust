@@ -66,35 +66,22 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         }
 
         let mut buffer = Vec::with_capacity(part_size);
-        let byte_stream:ByteStream;
+        //let byte_stream:ByteStream;
 
         let start_read = std::time::Instant::now();
         while (read_total < part_size) && (read_length != 0) {
             // Handle the case when the bytes remaining to be read are
             // less than the block size
-            //read_length = chunk_size;
+
             if read_total + chunk_size > part_size {
                 contents.truncate(part_size - read_total);
-              //  read_length = part_size - read_total;
+
             }
-
-
-            /*
-            unsafe {
-                // Create a slice from the uninitialized part of the buffer
-                let buffer_slice = slice::from_raw_parts_mut(contents.as_mut_ptr(), read_length);
-                thread_file.read_exact(buffer_slice).unwrap();
-
-                // Set the length of the buffer to the number of bytes read
-                contents.set_len(read_length);
-            }*/
-
-
             read_length = thread_file.read(&mut contents).expect("Couldn't read file");
 
-            if (chunk_size!=part_size){
+            //if (chunk_size!=part_size){
                 buffer.extend_from_slice(&contents[..read_length]);
-            }
+            //}
 
             read_total += read_length;
             //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
@@ -104,12 +91,13 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         //overall_read_total = overall_read_total + read_total;
 
 
-        if (chunk_size!=part_size){
-            byte_stream = ByteStream::from(Bytes::from(buffer));
-        }
+        //if (chunk_size!=part_size){
+            let byte_stream = ByteStream::from(Bytes::from(buffer));
+        //}
+            /*
         else {
                 byte_stream = ByteStream::from(contents.clone());
-        }
+        }*/
 
         let start_upload_part_res = std::time::Instant::now();
 
