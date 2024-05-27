@@ -18,18 +18,18 @@ use std::sync::RwLock;
 use bytes::{Bytes, BytesMut};
 use futures_util::AsyncWriteExt;
 use tracing_subscriber;
+
+
 use tracing_subscriber::{EnvFilter, FmtSubscriber, Registry};
 use tracing_subscriber::layer::SubscriberExt;
-
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
 }
-//static mut end_upload_part_res: u128 =0;
+
 
 
 async fn read_file_segment (i: usize, path: String,  starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
-
 
     let mut part_size = part_size;
     let mut last_part_size = last_part_size;
@@ -39,9 +39,6 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
     // Can't be zero since that's the EOF condition from read()
 
 
-    //let offset: u64 = (i * division) as u64;
-    //division =division/ (i+1);
-    let start_offset = std::time::Instant::now();
     thread_file
         .seek(SeekFrom::Start(offset as u64))
         .expect("Couldn't seek to position in file");
@@ -89,7 +86,9 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         //overall_read_total = overall_read_total + read_total;
         let byte_stream = ByteStream::from(Bytes::from(buffer));
 
+
         let start_upload_part_res = std::time::Instant::now();
+        /*
         let upload_part_res = client
             .upload_part()
             .key(&key)
@@ -108,6 +107,8 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
                 .part_number(part_number as i32)
                 .build(),
         );
+
+         */
         end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
 
         part_counter = part_counter + 1;
@@ -193,7 +194,17 @@ async fn main() {
     let mut tasks = vec![];
 
     let shared_config = aws_config::load_from_env().await;
-    //let client : Arc<Client> = Arc::new(S3Client::new(&shared_config));
+
+    /*
+    let mut signing_settings = SigningSettings::default();
+    signing_settings. = true;
+
+    let s3_config = Config::builder()
+        .region(shared_config.region().cloned())
+        .signing_settings(signing_settings)
+        .build();
+*/
+
     let client : Client = S3Client::new(&shared_config);
 
     let bucket_name = "test-bucket-goyvabhi".to_string();
