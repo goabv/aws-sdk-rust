@@ -10,7 +10,7 @@ use aws_sdk_s3::operation::{
     create_multipart_upload::CreateMultipartUploadOutput, get_object::GetObjectOutput,
 };
 use aws_sdk_s3::types::{CompletedMultipartUpload, CompletedPart};
-use aws_sdk_s3::{config::Region, Client as S3Client, Client};
+use aws_sdk_s3::{config::Region, Client as S3Client, Client, config::Config};
 use aws_smithy_types::byte_stream::{ByteStream, Length};
 use std::sync::Arc;
 use lazy_static::lazy_static;
@@ -19,12 +19,26 @@ use bytes::{Bytes, BytesMut};
 use futures_util::AsyncWriteExt;
 use tracing_subscriber;
 use std::slice;
-
+use hyper::client::HttpConnector;
+use hyper::Client as HyperClient;
 use tracing_subscriber::{EnvFilter, FmtSubscriber, Registry};
 use tracing_subscriber::layer::SubscriberExt;
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
+}
+
+
+fn create_custom_http_connector() -> HyperClient<hyper::client::HttpConnector, hyper::Body> {
+    let mut http_connector = HttpConnector::new();
+    http_connector.set_nodelay(true);
+
+    // Customize the connection pool settings
+    http_connector.set_keepalive(Some(std::time::Duration::from_secs(60)));
+
+    HyperClient::builder()
+        .pool_max_idle_per_host(50)  // Default is 50, change as needed
+        .build(http_connector)
 }
 
 
@@ -103,7 +117,6 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         if (chunk_size!=part_size){
             byte_stream = ByteStream::from(buffer);
         }
-
         else {
             byte_stream = ByteStream::from(contents);
         }
@@ -216,6 +229,14 @@ async fn main() {
 
     let shared_config = aws_config::load_from_env().await;
 
+    let http_client = create_custom_http_connector();
+
+    let s3_config = Config::builder()
+        .region(shared_config.region().cloned())
+        .http_client(Arc::new(http_client))
+        .build();
+
+
     /*
     let mut signing_settings = SigningSettings::default();
     signing_settings. = true;
@@ -226,7 +247,9 @@ async fn main() {
         .build();
 */
 
-    let client : Client = S3Client::new(&shared_config);
+    let client : Client = Client::from_conf(s3_config);
+
+    //let client : Client = S3Client::new(&shared_config);
 
     let bucket_name = "test-bucket-goyvabhi".to_string();
     let region_provider = RegionProviderChain::first_try(Region::new("us-east-2"));
