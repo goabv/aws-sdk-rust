@@ -29,6 +29,7 @@ lazy_static! {
     //static ref GLOBAL_MEM_BUFF: Vec<u8>=Vec::new();
 }
 
+/*
 lazy_static! {
     static ref GLOBAL_MEM_BUFF: Vec<u8> = {
         // Initialize the static variable
@@ -40,7 +41,7 @@ lazy_static! {
         vec
     };
 }
-
+*/
 
 async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
     let mut part_size = part_size;
