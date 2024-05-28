@@ -61,8 +61,11 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
 
             let deref_var = &*GLOBAL_MEM_BUFF;
 
-            let byte_stream;
-            unsafe{byte_stream = ByteStream::from(deref_var[1..5]);}
+            let byte_stream: ByteStream;
+
+            unsafe{
+                byte_stream = ByteStream::from(deref_var);
+            }
 
 
         read_offset =read_offset+part_size;
