@@ -58,13 +58,13 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
             part_size=last_part_size;
         }
 
-
-            let deref_var = &*GLOBAL_MEM_BUFF;
-            let deref_var_clone = deref_var.clone();
-
             let end_offset = read_offset + part_size;
+            let deref_var = &*GLOBAL_MEM_BUFF;
+            let mut contents = Vec::with_capacity(part_size);
+            contents.extend_from_slice(&deref_var[read_offset..end_offset]);
+
             let byte_stream: ByteStream;
-            unsafe{byte_stream = ByteStream::from(deref_var_clone[read_offset..end_offset]);}
+            unsafe{byte_stream = ByteStream::from(contents);}
 
 
 
