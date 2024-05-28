@@ -2,6 +2,7 @@
 use std::fs::{metadata, File};
 use std::io::{Read, Seek, SeekFrom};
 use std::env::args;
+use std::ptr::addr_of;
 use futures::future::join_all;
 use hyper::Body;
 use async_std::task;
@@ -49,9 +50,7 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
 
 
             let byte_stream;
-            unsafe{byte_stream = ByteStream::from(&GLOBAL_MEM_BUFF);}
-
-
+            unsafe{byte_stream = ByteStream::from(addr_of!(GLOBAL_MEM_BUFF));}
 
 
         read_offset =read_offset+part_size;
