@@ -26,14 +26,23 @@ use tracing_subscriber::layer::SubscriberExt;
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
-    static ref GLOBAL_MEM_BUFF: Vec<u8>=Vec::new();
+    //static ref GLOBAL_MEM_BUFF: Vec<u8>=Vec::new();
 }
-//static mut GLOBAL_MEM_BUFF: Vec<u8>=Vec::new();
+
+lazy_static! {
+    static ref GLOBAL_MEM_BUFF: Vec<u8> = {
+        // Initialize the static variable
+        let mut vec = Vec::new();
+        for _ in 0..30 {
+            let chunk: Vec<u8> = vec![0; 1*1024*1024];
+            vec.extend_from_slice(&chunk);
+        }
+        vec
+    };
+}
 
 
-
-
-async fn read_memory_segment (i: usize, buffer_mem: &Vec<u8>, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
+async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
     let mut part_size = part_size;
     let last_part_size = last_part_size;
 
@@ -51,7 +60,7 @@ async fn read_memory_segment (i: usize, buffer_mem: &Vec<u8>, starting_part_numb
 
 
             let byte_stream;
-            unsafe{byte_stream = ByteStream::from(buffer_mem[1..5]);}
+            unsafe{byte_stream = ByteStream::from(*GLOBAL_MEM_BUFF[1..5]);}
 
 
         read_offset =read_offset+part_size;
@@ -236,22 +245,13 @@ async fn main() {
 
 
     let buffer_size_bytes = 30*1024*1024*1024;
-    let chunk_size_bytes = 1*1024*1024*1024;
+    //let chunk_size_bytes = 1*1024*1024*1024;
     let mut length = 0;
 
     let mut buffer: Vec<u8> = vec![0,1];
 
     if (path.as_str()=="memory") {
-        unsafe{
-
-            buffer = Vec::with_capacity(buffer_size_bytes);
-
-        for _ in 0..(buffer_size_bytes / chunk_size_bytes) {
-            let chunk: Vec<u8> = vec![0; chunk_size_bytes];
-            buffer.extend_from_slice(&chunk);
-        }
         length=buffer_size_bytes;
-            }
     }
     else {
         length = metadata(path)
@@ -261,7 +261,7 @@ async fn main() {
             .expect("Couldn't convert len from u64 to usize");
     }
 
-    let buffer_mem = buffer.clone();
+
 
 
     let mut total_num_parts = length/part_size;
@@ -327,7 +327,6 @@ async fn main() {
         if (path.as_str()=="memory"){
             task = task::spawn(read_memory_segment(
                 i,
-                &buffer_mem,
                 starting_part_number,
                 num_parts_thread,
                 part_size,
