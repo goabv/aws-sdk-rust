@@ -58,18 +58,8 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
             part_size=last_part_size;
         }
 
-            let end_offset = read_offset + part_size;
-            let deref_var = &*GLOBAL_MEM_BUFF;
-            let mut contents = Vec::with_capacity(part_size);
-            contents.extend_from_slice(&deref_var[read_offset..end_offset]);
-
-            let byte_stream: ByteStream;
-            unsafe{byte_stream = ByteStream::from(contents);}
-
-
-
-        read_offset =read_offset+part_size;
-
+        let contents = vec![0,part_size];
+        let byte_stream = ByteStream::from(contents);
         let start_upload_part_res = std::time::Instant::now();
 
         let upload_part_res = client
@@ -135,7 +125,6 @@ async fn read_file_segment (i: usize, path: String, starting_part_number: usize,
         while (read_total < part_size) && (read_length != 0) {
             // Handle the case when the bytes remaining to be read are
             // less than the block size
-
 
             if read_total + chunk_size > part_size {
                 contents.truncate(part_size - read_total);
