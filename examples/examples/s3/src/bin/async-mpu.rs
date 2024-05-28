@@ -48,8 +48,12 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
         }
 
 
+            let byte_stream;
+            unsafe{byte_stream = ByteStream::from(GLOBAL_MEM_BUFF);}
 
-        let byte_stream = ByteStream::from(GLOBAL_MEM_BUFF);
+
+
+
         read_offset =read_offset+part_size;
 
         let start_upload_part_res = std::time::Instant::now();
