@@ -45,9 +45,10 @@ async fn read_memory_segment (i: usize,  buffer_mem: &Vec<u8>, starting_part_num
             part_size=last_part_size;
         }
 
-        let byte_stream:ByteStream;
 
-        byte_stream = ByteStream::from(buffer_mem[read_offset..(read_offset+part_size)]);
+
+        //let byte_stream = ByteStream::from(buffer_mem[read_offset..(read_offset+part_size)]);
+            let byte_stream = ByteStream::from(buffer_mem);
         read_offset =read_offset+part_size;
 
         let start_upload_part_res = std::time::Instant::now();
