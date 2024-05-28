@@ -252,8 +252,9 @@ async fn main() {
             .expect("Couldn't convert len from u64 to usize");
     }
 
+    let buffer_mem;
     unsafe{
-        let buffer_mem = &buffer;
+        buffer_mem = &buffer;
     }
 
 
