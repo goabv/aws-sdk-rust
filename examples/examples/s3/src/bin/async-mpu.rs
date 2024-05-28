@@ -34,7 +34,7 @@ lazy_static! {
         // Initialize the static variable
         let mut vec = Vec::new();
         for _ in 0..30 {
-            let chunk: Vec<u8> = vec![0; 1*1024*1024];
+            let chunk: Vec<u8> = vec![0; 1*1024*1024*1024];
             vec.extend_from_slice(&chunk);
         }
         vec
