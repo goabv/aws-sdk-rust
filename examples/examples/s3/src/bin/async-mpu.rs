@@ -15,6 +15,7 @@ use aws_smithy_types::byte_stream::{ByteStream, Length};
 use std::sync::Arc;
 use lazy_static::lazy_static;
 use std::sync::RwLock;
+use async_std::task::JoinHandle;
 use futures_util::AsyncWriteExt;
 use tracing_subscriber;
 use hyper::client::HttpConnector;
@@ -24,20 +25,69 @@ use tracing_subscriber::layer::SubscriberExt;
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
+ //   static ref GLOBAL_MEM_BUFF: Vec<u8> = vec![0,30G];
 }
 
 
+async fn read_memory_segment (i: usize,  buffer_mem: &Vec<u8>, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
+    let mut part_size = part_size;
+    let last_part_size = last_part_size;
+
+    println!("In Memory Segment Read");
+    let mut part_number = starting_part_number;
+    let mut end_upload_part_res: u128 = 0;
+    let mut part_counter:usize = 1;
+
+    let mut read_offset = offset;
+        while (part_counter <= num_parts_thread){
+
+        if (part_counter == num_parts_thread){
+            part_size=last_part_size;
+        }
+
+        let byte_stream:ByteStream;
+
+        byte_stream = ByteStream::from(buffer_mem[read_offset..(read_offset+part_size)]);
+        read_offset =read_offset+part_size;
+
+        let start_upload_part_res = std::time::Instant::now();
+
+        let upload_part_res = client
+            .upload_part()
+            .key(&key)
+            .bucket(&bucket_name)
+            .upload_id((*upload_id).clone())
+            .body(byte_stream)
+            .part_number(part_number as i32)
+            .send()
+            .await
+            .unwrap();
 
 
+        GLOBAL_VEC.write().unwrap().push(
+            CompletedPart::builder()
+                .e_tag(upload_part_res.e_tag.unwrap_or_default())
+                .part_number(part_number as i32)
+                .build(),
+        );
 
-async fn read_file_segment (i: usize, path: String,  starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
+
+        end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
+
+        part_counter = part_counter + 1;
+        part_number = part_number + 1;
+
+    }
+
+}
+
+
+async fn read_file_segment (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
     let mut part_size = part_size;
     let last_part_size = last_part_size;
     let mut thread_file = File::open(&path).expect("Unable to open file");
     //let mut contents = vec![0_u8; chunk_size];
-    // Can't be zero since that's the EOF condition from read()
-
 
     thread_file
         .seek(SeekFrom::Start(offset as u64))
@@ -169,7 +219,7 @@ async fn main() {
 
 
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
-    let start = std::time::Instant::now();
+
     // your code here
 
     let args: Vec<String> = args().collect();
@@ -178,11 +228,31 @@ async fn main() {
     let part_size = (&args[3]).parse::<usize>().unwrap()*1024*1024;
     let chunk_size= (&args[4]).parse::<usize>().unwrap()*1024*1024;
 
-    let length: usize = metadata(path)
-        .expect("Unable to query file details")
-        .len()
-        .try_into()
-        .expect("Couldn't convert len from u64 to usize");
+
+    let buffer_size_bytes = 30*1024*1024*1024;
+    let chunk_size_bytes = 1*1024*1024*1024;
+    let mut length = 0;
+
+    let mut buffer: Vec<u8>;
+
+    if (path.as_str()=="memory") {
+        buffer = Vec::with_capacity(buffer_size_bytes);
+
+        for _ in 0..(buffer_size_bytes / chunk_size_bytes) {
+            let chunk: Vec<u8> = vec![0; chunk_size_bytes];
+            buffer.extend_from_slice(&chunk);
+        }
+        length=buffer_size_bytes;
+    }
+    else {
+        length = metadata(path)
+            .expect("Unable to query file details")
+            .len()
+            .try_into()
+            .expect("Couldn't convert len from u64 to usize");
+    }
+
+    let buffer_mem = &buffer;
 
     let mut total_num_parts = length/part_size;
     let mut last_part_size = length%part_size;
@@ -208,6 +278,11 @@ async fn main() {
     let bucket_name = "test-bucket-goyvabhi".to_string();
     let key = "test.dat".to_string();
 
+
+
+
+
+    let start = std::time::Instant::now();
 
     let multipart_upload_res: CreateMultipartUploadOutput = client
         .create_multipart_upload()
@@ -240,20 +315,41 @@ async fn main() {
         }
         //info!("Inside main");
         println!("Thread Number: {}, num_parts_thread {}, part_size {}, last_part_size_for_thread {}, chunk_size {}, offset {}",i,num_parts_thread,part_size,last_part_size_for_thread,chunk_size,offset);
-        let task = task::spawn(read_file_segment(
-            i,
-            path.to_string(),
-            starting_part_number,
-            num_parts_thread,
-            part_size,
-            last_part_size_for_thread,
-            chunk_size,
-            offset,
-            client,
-            bucket_name.to_string(),
-            key.to_string(),
-            upload_id
-        ));
+        let task: JoinHandle<()>;
+
+
+        if (path.as_str()=="memory"){
+            task = task::spawn(read_memory_segment(
+                i,
+                buffer_mem,
+                starting_part_number,
+                num_parts_thread,
+                part_size,
+                last_part_size_for_thread,
+                chunk_size,
+                offset,
+                client,
+                bucket_name.to_string(),
+                key.to_string(),
+                upload_id
+            ));
+        }else {
+            task = task::spawn(read_file_segment(
+                i,
+                path.to_string(),
+                starting_part_number,
+                num_parts_thread,
+                part_size,
+                last_part_size_for_thread,
+                chunk_size,
+                offset,
+                client,
+                bucket_name.to_string(),
+                key.to_string(),
+                upload_id
+            ));
+        }
+
         tasks.push(task);
         offset = offset + (num_parts_thread*part_size);
         starting_part_number = starting_part_number + num_parts_thread;
