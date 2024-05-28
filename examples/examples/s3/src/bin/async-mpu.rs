@@ -27,25 +27,13 @@ lazy_static! {
 }
 
 
-fn create_custom_http_connector() -> HyperClient<hyper::client::HttpConnector, hyper::Body> {
-    let mut http_connector = HttpConnector::new();
-    http_connector.set_nodelay(true);
-
-    // Customize the connection pool settings
-    http_connector.set_keepalive(Some(std::time::Duration::from_secs(60)));
-
-    HyperClient::builder()
-        .pool_max_idle_per_host(50)  // Default is 50, change as needed
-        .build(http_connector)
-}
 
 
 
 async fn read_file_segment (i: usize, path: String,  starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
     let mut part_size = part_size;
-    let mut last_part_size = last_part_size;
-    let start_thread = std::time::Instant::now();
+    let last_part_size = last_part_size;
     let mut thread_file = File::open(&path).expect("Unable to open file");
     //let mut contents = vec![0_u8; chunk_size];
     // Can't be zero since that's the EOF condition from read()
@@ -55,18 +43,10 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
         .seek(SeekFrom::Start(offset as u64))
         .expect("Couldn't seek to position in file");
 
-    //eprintln!("Thread = {}, Time={:?}", i, start_offset.elapsed());
-    let start_content_read = std::time::Instant::now();
-
-
-    //let mut upload_parts_clone = &(*upload_parts);
     let mut part_number = starting_part_number;
     let mut end_read: u128 = 0;
     let mut end_upload_part_res: u128 = 0;
-    //let mut end_upload_part_stack_push: u128 = 0;
     let mut part_counter:usize = 1;
-    let mut overall_read_total: usize = 0;
-    //println!("Thread Number: {}, Number of parts per division: {}",i,num_parts_thread);
 
     while (part_counter <= num_parts_thread){
         let mut read_total: usize = 0;
@@ -161,9 +141,6 @@ async fn read_file_segment (i: usize, path: String,  starting_part_number: usize
 
 #[tokio::main]
 async fn main() {
-    //let subscriber: Subscriber = tracing_subscriber::FmtSubscriber::new();
-    // use that subscriber to process traces emitted after this point
-    //tracing::subscriber::set_global_default(subscriber)?;
 
     /*
     let logger = tracing_logstash::Layer::default()
@@ -190,7 +167,6 @@ async fn main() {
         .expect("setting default subscriber failed");
 */
 
-    //env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
 
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
     let start = std::time::Instant::now();
@@ -201,6 +177,7 @@ async fn main() {
     let threads = (&args[2]).parse::<usize>().unwrap();
     let part_size = (&args[3]).parse::<usize>().unwrap()*1024*1024;
     let chunk_size= (&args[4]).parse::<usize>().unwrap()*1024*1024;
+
     let length: usize = metadata(path)
         .expect("Unable to query file details")
         .len()
@@ -221,31 +198,14 @@ async fn main() {
     }
 
     let mut parts_per_thread = total_num_parts/threads;
-    let mut remainder_parts = total_num_parts%threads;
+    let remainder_parts = total_num_parts%threads;
 
     let mut tasks = vec![];
 
     let shared_config = aws_config::load_from_env().await;
-
-
-    let hyper_client = create_custom_http_connector();
-
-    // Wrap the Hyper client in a Smithy adapter
-
-
-    // Create the S3 client with the custom HTTP client
-    let s3_config = Config::builder()
-        .region(shared_config.region().cloned())
-        .http_client(hyper_client)
-        .build();
-
-    let client = Client::from_conf(s3_config);
-
-    //let client : Client = S3Client::new(&shared_config);
+    let client : Client = S3Client::new(&shared_config);
 
     let bucket_name = "test-bucket-goyvabhi".to_string();
-    let region_provider = RegionProviderChain::first_try(Region::new("us-east-2"));
-    let region = region_provider.region().await.unwrap();
     let key = "test.dat".to_string();
 
 
@@ -256,6 +216,7 @@ async fn main() {
         .send()
         .await
         .unwrap();
+
     let upload_id = Arc::new(multipart_upload_res.upload_id().unwrap());
     let upload_id = Arc::new(upload_id.to_string().clone());
 
