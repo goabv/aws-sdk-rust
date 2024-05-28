@@ -239,16 +239,16 @@ async fn main() {
     let chunk_size_bytes = 1*1024*1024*1024;
     let mut length = 0;
 
-    let mut buffer: Vec<u8> = Vec::with_capacity(1);
+    let mut buffer: Vec<u8> = vec![0,1];
 
     if (path.as_str()=="memory") {
         unsafe{
 
-            //GLOBAL_MEM_BUFF = Vec::with_capacity(buffer_size_bytes);
+            buffer = Vec::with_capacity(buffer_size_bytes);
 
         for _ in 0..(buffer_size_bytes / chunk_size_bytes) {
             let chunk: Vec<u8> = vec![0; chunk_size_bytes];
-            GLOBAL_MEM_BUFF.extend_from_slice(&chunk);
+            buffer.extend_from_slice(&chunk);
         }
         length=buffer_size_bytes;
             }
@@ -261,6 +261,7 @@ async fn main() {
             .expect("Couldn't convert len from u64 to usize");
     }
 
+    let buffer_mem = buffer.clone();
 
 
     let mut total_num_parts = length/part_size;
@@ -326,7 +327,7 @@ async fn main() {
         if (path.as_str()=="memory"){
             task = task::spawn(read_memory_segment(
                 i,
-                &buffer.clone(),
+                &buffer_mem,
                 starting_part_number,
                 num_parts_thread,
                 part_size,
