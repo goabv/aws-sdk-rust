@@ -325,7 +325,7 @@ async fn main() {
         if (path.as_str()=="memory"){
             task = task::spawn(read_memory_segment(
                 i,
-                &buffer,
+                &buffer.clone(),
                 starting_part_number,
                 num_parts_thread,
                 part_size,
