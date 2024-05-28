@@ -59,7 +59,7 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
             part_size=last_part_size;
         }
 
-        let contents = vec![0,part_size];
+        let contents = vec![0_u8,part_size];
         let byte_stream = ByteStream::from(contents);
         let start_upload_part_res = std::time::Instant::now();
 
