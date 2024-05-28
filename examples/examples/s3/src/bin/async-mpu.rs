@@ -25,7 +25,7 @@ use tracing_subscriber::layer::SubscriberExt;
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
- //   static ref GLOBAL_MEM_BUFF: Vec<u8> = vec![0,30G];
+    //static ref GLOBAL_MEM_BUFF: Vec<u8>=Vec::with_capacity(1);
 }
 
 
@@ -233,7 +233,7 @@ async fn main() {
     let chunk_size_bytes = 1*1024*1024*1024;
     let mut length = 0;
 
-    let mut buffer: Vec<u8>;
+    let mut buffer: Vec<u8> = Vec::with_capacity(1);
 
     if (path.as_str()=="memory") {
         buffer = Vec::with_capacity(buffer_size_bytes);
@@ -252,7 +252,10 @@ async fn main() {
             .expect("Couldn't convert len from u64 to usize");
     }
 
-    let buffer_mem = &buffer;
+    unsafe{
+        let buffer_mem = &buffer;
+    }
+
 
     let mut total_num_parts = length/part_size;
     let mut last_part_size = length%part_size;
