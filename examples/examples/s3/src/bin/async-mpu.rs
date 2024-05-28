@@ -31,7 +31,7 @@ static mut GLOBAL_MEM_BUFF: Vec<u8>=Vec::new();
 
 
 
-async unsafe fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
+async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
     let mut part_size = part_size;
     let last_part_size = last_part_size;
 
@@ -238,6 +238,8 @@ async fn main() {
     let mut buffer: Vec<u8> = Vec::with_capacity(1);
 
     if (path.as_str()=="memory") {
+        unsafe{
+
         GLOBAL_MEM_BUFF = Vec::with_capacity(buffer_size_bytes);
 
         for _ in 0..(buffer_size_bytes / chunk_size_bytes) {
@@ -245,6 +247,7 @@ async fn main() {
             GLOBAL_MEM_BUFF.extend_from_slice(&chunk);
         }
         length=buffer_size_bytes;
+            }
     }
     else {
         length = metadata(path)
