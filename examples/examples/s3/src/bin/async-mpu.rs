@@ -244,7 +244,7 @@ async fn main() {
     if (path.as_str()=="memory") {
         unsafe{
 
-            GLOBAL_MEM_BUFF = Vec::with_capacity(buffer_size_bytes);
+            *GLOBAL_MEM_BUFF = Vec::with_capacity(buffer_size_bytes);
 
         for _ in 0..(buffer_size_bytes / chunk_size_bytes) {
             let chunk: Vec<u8> = vec![0; chunk_size_bytes];
