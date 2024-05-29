@@ -35,10 +35,6 @@ lazy_static! {
     static ref GLOBAL_MEM_BUFF: Vec<u8> = {
         // Initialize the static variable
         let mut vec = Vec::new();
-        for _ in 0..30 {
-            let chunk: Vec<u8> = vec![0; 1*1024*1024*1024];
-            vec.extend_from_slice(&chunk);
-        }
         vec
     };
 }
@@ -54,16 +50,28 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
     let mut part_counter:usize = 1;
 
     let mut read_offset = offset;
-    let mut contents = vec![0_u8; part_size];
+
     while (part_counter <= num_parts_thread){
 
-        if (part_counter == num_parts_thread){
+        let mut contents = vec![0_u8; 1];
+        let byte_stream;
+
+
+        if (part_counter == num_parts_thread && last_part_size<part_size){
             part_size=last_part_size;
-            contents.truncate(part_size);
+            contents = vec![0;last_part_size];
+            byte_stream = ByteStream::from(contents);
+            //      contents.truncate(part_size);
+        }
+        else {
+            byte_stream = ByteStream::from_static(&*GLOBAL_MEM_BUFF);
         }
 
+
         //let contents_owned = mem::replace (&mut contents, vec![]);
-        let byte_stream = ByteStream::from_static(&*GLOBAL_MEM_BUFF);
+
+
+
         let start_upload_part_res = std::time::Instant::now();
 
 
@@ -247,8 +255,11 @@ async fn main() {
     //let chunk_size_bytes = 1*1024*1024*1024;
     let mut length = 0;
 
-
+    let mut vec = &*GLOBAL_MEM_BUFF;
     if (path.as_str()=="memory") {
+            vec = &vec![0; part_size];
+        }
+
         length=buffer_size_bytes;
     }
     else {
