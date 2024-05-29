@@ -2,6 +2,7 @@
 use std::fs::{metadata, File};
 use std::io::{Read, Seek, SeekFrom};
 use std::env::args;
+use std::mem;
 use std::ptr::addr_of;
 use futures::future::join_all;
 use hyper::Body;
@@ -53,13 +54,16 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
     let mut part_counter:usize = 1;
 
     let mut read_offset = offset;
-    let contents = vec![0_u8;part_size];
+    let mut contents = vec![0_u8; part_size];
     while (part_counter <= num_parts_thread){
 
         if (part_counter == num_parts_thread){
             part_size=last_part_size;
+            contents.truncate(part_size);
         }
-        let byte_stream = ByteStream::from(contents);
+
+        let contents_owned = mem::replace (&mut contents, vec![]);
+        let byte_stream = ByteStream::from(contents_owned);
         let start_upload_part_res = std::time::Instant::now();
 
         let upload_part_res = client
