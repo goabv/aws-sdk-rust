@@ -34,7 +34,7 @@ lazy_static! {
 lazy_static! {
     static ref GLOBAL_MEM_BUFF: Vec<u8> = {
         // Initialize the static variable
-        let mut vec = Vec::new();
+        let mut vec = vec![0u8;128*1024*1024];
         vec
     };
 }
@@ -66,7 +66,7 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
         else {
             let vec = &*GLOBAL_MEM_BUFF;
             eprintln!("Vector Length: {}", vec.len());
-            byte_stream = ByteStream::from_static(&*GLOBAL_MEM_BUFF);
+            byte_stream = ByteStream::from_static(vec);
         }
 
 
@@ -257,12 +257,8 @@ async fn main() {
     //let chunk_size_bytes = 1*1024*1024*1024;
     let mut length = 0;
 
-    let mut vec = &*GLOBAL_MEM_BUFF;
-    if (path.as_str()=="memory") {
-            eprintln!("inside memory block");
 
-            vec = &vec![0; part_size];
-            eprintln!("vec length inside memory block {}", vec.len());
+    if (path.as_str()=="memory") {
             length=buffer_size_bytes;
     }
     else {
