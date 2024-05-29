@@ -39,7 +39,7 @@ lazy_static! {
 }
 
 
-async fn read_memory_segment (i: usize, buffer_mem: &[u8], starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
+async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
     let mut part_size = part_size;
     let last_part_size = last_part_size;
 
@@ -56,8 +56,8 @@ async fn read_memory_segment (i: usize, buffer_mem: &[u8], starting_part_number:
             part_size=last_part_size;
         }
 
-
-        let byte_stream = ByteStream::from(buffer_mem);
+        let vec = *GLOBAL_MEM_BUFF;
+        let byte_stream = ByteStream::from(vec);
         let start_upload_part_res = std::time::Instant::now();
 
         let upload_part_res = client
@@ -241,7 +241,8 @@ async fn main() {
     let mut length = 0;
 
 
-    let buffer_mem = vec![0u8;part_size];
+    let mut vec = &*GLOBAL_MEM_BUFF;
+    vec = &vec![0u8; part_size];
 
     if (path.as_str()=="memory") {
         length=buffer_size_bytes;
@@ -299,7 +300,7 @@ async fn main() {
     let mut offset: usize= 0;
     let mut starting_part_number = 1;
 
-    let buffer_mem_arc = Arc::new(buffer_mem);
+
     for i in 0..threads {
         //let client = Arc::clone(&client);
         let client = client.clone();
@@ -321,10 +322,9 @@ async fn main() {
 
         if (path.as_str()=="memory"){
 
-            let buffer_mem_arc_clone = Arc::clone(&buffer_mem_arc);
+
             task = task::spawn(read_memory_segment(
                 i,
-                &buffer_mem_arc_clone,
                 starting_part_number,
                 num_parts_thread,
                 part_size,
