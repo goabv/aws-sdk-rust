@@ -62,9 +62,10 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
             contents.truncate(part_size);
         }
 
-        let contents_owned = mem::replace (&mut contents, vec![]);
-        let byte_stream = ByteStream::from(contents_owned);
+        //let contents_owned = mem::replace (&mut contents, vec![]);
+        let byte_stream = ByteStream::from(contents.as_slice());
         let start_upload_part_res = std::time::Instant::now();
+
 
         let upload_part_res = client
             .upload_part()
