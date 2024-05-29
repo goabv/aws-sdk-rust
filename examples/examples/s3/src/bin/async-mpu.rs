@@ -259,7 +259,10 @@ async fn main() {
 
     let mut vec = &*GLOBAL_MEM_BUFF;
     if (path.as_str()=="memory") {
+            eprintln!("inside memory block")
+
             vec = &vec![0; part_size];
+            eprintln!("vec length inside memory block {}", vec.len());
             length=buffer_size_bytes;
     }
     else {
