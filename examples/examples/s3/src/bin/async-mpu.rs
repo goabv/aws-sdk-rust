@@ -59,11 +59,13 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
 
         if (part_counter == num_parts_thread && last_part_size<part_size){
             part_size=last_part_size;
-            contents = vec![0;last_part_size];
+            contents = vec![0;part_size];
             byte_stream = ByteStream::from(contents);
             //      contents.truncate(part_size);
         }
         else {
+            let vec = &*GLOBAL_MEM_BUFF;
+            eprintln!("Vector Length: {}", vec.len());
             byte_stream = ByteStream::from_static(&*GLOBAL_MEM_BUFF);
         }
 
