@@ -56,7 +56,7 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
             part_size=last_part_size;
         }
 
-        let vec = *GLOBAL_MEM_BUFF;
+        let vec = &*GLOBAL_MEM_BUFF;
         let byte_stream = ByteStream::from(vec);
         let start_upload_part_res = std::time::Instant::now();
 
