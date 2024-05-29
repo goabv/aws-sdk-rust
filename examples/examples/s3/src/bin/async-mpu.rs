@@ -30,15 +30,19 @@ lazy_static! {
     //static ref GLOBAL_MEM_BUFF: Vec<u8>=Vec::new();
 }
 
-
+/*
 lazy_static! {
     static ref GLOBAL_MEM_BUFF: Vec<u8> = {
         // Initialize the static variable
-        let mut vec = vec![0u8;128*1024*1024];
+        let mut vec = Vec::new();
+        for _ in 0..30 {
+            let chunk: Vec<u8> = vec![0; 1*1024*1024*1024];
+            vec.extend_from_slice(&chunk);
+        }
         vec
     };
 }
-
+*/
 
 async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
     let mut part_size = part_size;
@@ -50,32 +54,17 @@ async fn read_memory_segment (i: usize, starting_part_number: usize, num_parts_t
     let mut part_counter:usize = 1;
 
     let mut read_offset = offset;
-
+    let mut contents = vec![0_u8; part_size];
     while (part_counter <= num_parts_thread){
 
-        let mut contents = vec![0_u8; 1];
-        let byte_stream;
-
-
-        if (part_counter == num_parts_thread && last_part_size<part_size){
+        if (part_counter == num_parts_thread){
             part_size=last_part_size;
-            contents = vec![0;part_size];
-            byte_stream = ByteStream::from(contents);
-            //      contents.truncate(part_size);
-        }
-        else {
-            let vec = &*GLOBAL_MEM_BUFF;
-            eprintln!("Vector Length: {}", vec.len());
-            byte_stream = ByteStream::from_static(vec);
+            contents.truncate(part_size);
         }
 
-
-        //let contents_owned = mem::replace (&mut contents, vec![]);
-
-
-
+        let contents_owned = mem::replace (&mut contents, vec![]);
+        let byte_stream = ByteStream::from(contents_owned);
         let start_upload_part_res = std::time::Instant::now();
-
 
         let upload_part_res = client
             .upload_part()
@@ -259,7 +248,7 @@ async fn main() {
 
 
     if (path.as_str()=="memory") {
-            length=buffer_size_bytes;
+        length=buffer_size_bytes;
     }
     else {
         length = metadata(path)
