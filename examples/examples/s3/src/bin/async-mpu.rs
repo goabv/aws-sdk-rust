@@ -258,9 +258,7 @@ async fn main() {
     let mut vec = &*GLOBAL_MEM_BUFF;
     if (path.as_str()=="memory") {
             vec = &vec![0; part_size];
-        }
-
-        length=buffer_size_bytes;
+            length=buffer_size_bytes;
     }
     else {
         length = metadata(path)
