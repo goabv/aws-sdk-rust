@@ -121,7 +121,7 @@ async fn read_file_segment (i: usize, path: String, starting_part_number: usize,
             part_size=last_part_size;
         }
 
-        let mut buffer = Vec::with_capacity(part_size);
+        let mut buffer = Vec::new();
         let byte_stream:ByteStream;
 
         let start_read = std::time::Instant::now();
