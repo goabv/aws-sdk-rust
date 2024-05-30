@@ -116,7 +116,7 @@ async fn read_file_segment (i: usize, path: String, starting_part_number: usize,
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
         //let mut contents = Vec::with_capacity(chunk_size);
-        let mut contents = Vec::with_capacity(chunk_size);
+        let mut contents = vec![0;chunk_size];
         if (part_counter == num_parts_thread){
             part_size=last_part_size;
         }
@@ -133,16 +133,12 @@ async fn read_file_segment (i: usize, path: String, starting_part_number: usize,
 
             if read_total + chunk_size > part_size {
                 contents.truncate(part_size - read_total);
-                read_length = part_size - read_total;
+                //read_length = part_size - read_total;
             }
 
 
-            //unsafe {
-                contents.set_len(read_length); // Temporarily set the length for read_exact
-                thread_file.read_exact(&mut contents).unwrap();
-            //}
 
-            //read_length = thread_file.read(&mut contents).expect("Couldn't read file");
+            read_length = thread_file.read(&mut contents).expect("Couldn't read file");
 
             if (chunk_size!=part_size){
                 buffer.extend_from_slice(&contents[..read_length]);
