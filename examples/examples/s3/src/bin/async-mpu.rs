@@ -1,4 +1,4 @@
-
+use jemallocator::Jemalloc;
 use std::fs::{metadata, File};
 use std::io::{Read, Seek, SeekFrom};
 use std::env::args;
@@ -24,6 +24,9 @@ use hyper::client::HttpConnector;
 use hyper::Client as HyperClient;
 use tracing_subscriber::{EnvFilter, FmtSubscriber, Registry};
 use tracing_subscriber::layer::SubscriberExt;
+
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
