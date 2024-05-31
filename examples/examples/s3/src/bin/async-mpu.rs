@@ -129,7 +129,10 @@ async fn main() {
     let file = File::create("flamegraph.folded").expect("Unable to create flamegraph output file");
     let flame_layer = FlameLayer::new(BufWriter::new(file));
 
-    let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_target(false)
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::FULL);
+
     let env_filter = EnvFilter::new("info");
 
     let subscriber = Registry::default()
