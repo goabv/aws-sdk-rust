@@ -4,7 +4,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::env::args;
 use std::fmt::Debug;
 use futures::future::join_all;
-//use async_std::task;
+use async_std::task;
 use aws_sdk_s3::operation::{create_multipart_upload::CreateMultipartUploadOutput};
 use aws_sdk_s3::types::{CompletedMultipartUpload, CompletedPart};
 use aws_sdk_s3::{ Client as S3Client, Client};
@@ -22,8 +22,8 @@ use tokio::runtime::Builder;
 use tracing::{Level, span};
 use tracing::span::Entered;
 
-//#[global_allocator]
-//static GLOBAL: Jemalloc = Jemalloc;
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
@@ -242,6 +242,7 @@ async fn async_main() {
         println!("Thread Number: {}, num_parts_thread {}, part_size {}, last_part_size_for_thread {}, chunk_size {}, offset {}",i,num_parts_thread,part_size,last_part_size_for_thread,chunk_size,offset);
 
 
+        /*
         let task = tokio::task::spawn(read_file_and_upload_single_part(
                 i,
                 path.to_string(),
@@ -256,6 +257,22 @@ async fn async_main() {
                 key.to_string(),
                 upload_id
             ));
+*/
+        let task = task::spawn(read_file_and_upload_single_part(
+            i,
+            path.to_string(),
+            starting_part_number,
+            num_parts_thread,
+            part_size,
+            last_part_size_for_thread,
+            chunk_size,
+            offset,
+            client,
+            bucket_name.to_string(),
+            key.to_string(),
+            upload_id
+        ));
+
 
         tasks.push(task);
         offset = offset + (num_parts_thread*part_size);
