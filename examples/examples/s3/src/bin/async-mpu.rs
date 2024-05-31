@@ -50,7 +50,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     while (part_counter <= num_parts_thread){
         let span_2 = span!(Level::INFO, "reading single part from file");
         span_2.record("thread_id",&i);
-        let _enter_2 = span_2.enter()
+        let _enter_2 = span_2.enter();
 
         //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
         let mut read_total: usize = 0;
