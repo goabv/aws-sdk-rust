@@ -2,6 +2,7 @@ use jemallocator::Jemalloc;
 use std::fs::{metadata, File};
 use std::io::{Read, Seek, SeekFrom};
 use std::env::args;
+use std::fmt::Debug;
 use futures::future::join_all;
 use async_std::task;
 use aws_sdk_s3::operation::{create_multipart_upload::CreateMultipartUploadOutput};
@@ -27,7 +28,7 @@ lazy_static! {
 }
 
 
-#[tracing::instrument]
+
 async fn read_file_and_upload_single_part (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
     let span_1 = span!(Level::INFO, "reading and uploading all parts for a given thread:", thread_id = i);
@@ -47,8 +48,10 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     let mut part_counter:usize = 1;
 
     while (part_counter <= num_parts_thread){
-        let span_2 = span!(Level::INFO, "reading single part from file:", thread_id= i, part_count = part_counter).entered();
+        let span_2 = span!(Level::INFO, "reading single part from file").entered();
+        span_2.record("thread_id",&i);
                 //tracing::info!(thread = i,part_count=part_counter,"start reading file segment");
+
         //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
@@ -136,6 +139,7 @@ async fn main() {
         .with(flame_layer)
         .with(fmt_layer)
         .with(env_filter);
+
 
     tracing::subscriber::set_global_default(subscriber).expect("Could not set global default subscriber");
     //let _flush_guard = tracing_flame::FlushGuard::new("flamegraph.folded");
