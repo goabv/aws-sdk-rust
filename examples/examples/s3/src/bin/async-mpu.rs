@@ -24,9 +24,10 @@ lazy_static! {
 
 
 
-async fn read_file_segment (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
+async fn read_file_and_upload_single_part (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
 
+    flame::start("read_file_and_upload_single_part");
     let mut part_size = part_size;
     let last_part_size = last_part_size;
     let mut thread_file = File::open(&path).expect("Unable to open file");
@@ -41,6 +42,7 @@ async fn read_file_segment (i: usize, path: String, starting_part_number: usize,
     let mut part_counter:usize = 1;
 
     while (part_counter <= num_parts_thread){
+        flame::start("reading one fle offset");
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
         let byte_stream:ByteStream;
@@ -73,7 +75,9 @@ async fn read_file_segment (i: usize, path: String, starting_part_number: usize,
         else {
             byte_stream = ByteStream::from(contents);
         }
+        flame::end("reading one fle offset");
 
+        flame::start("uploading part");
         let start_upload_part_res = std::time::Instant::now();
         let upload_part_res = client
             .upload_part()
@@ -93,16 +97,18 @@ async fn read_file_segment (i: usize, path: String, starting_part_number: usize,
                 .build(),
         );
 
+        flame::end("uploading part");
         end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
         part_counter = part_counter + 1;
         part_number = part_number + 1;
     }
+    flame::end("read_file_and_upload_single_part");
     //println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 }
 #[tokio::main]
 async fn main() {
 
-    flame::start("compute");
+    flame::start("main");
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
 
     let args: Vec<String> = args().collect();
@@ -173,7 +179,7 @@ async fn main() {
         }
 
         println!("Thread Number: {}, num_parts_thread {}, part_size {}, last_part_size_for_thread {}, chunk_size {}, offset {}",i,num_parts_thread,part_size,last_part_size_for_thread,chunk_size,offset);
-        let task = task::spawn(read_file_segment(
+        let task = task::spawn(read_file_and_upload_single_part(
                 i,
                 path.to_string(),
                 starting_part_number,
@@ -213,7 +219,7 @@ async fn main() {
         .unwrap();
 
     eprintln!("{:?}", start.elapsed());
-    flame::end("compute");
-    let mut file = File::create("flamegraph.html").unwrap();
-    flame::dump_html(&mut file).unwrap();
+    flame::end("main");
+    //let mut file = File::create("flamegraph.html").unwrap();
+    //flame::dump_html(&mut file).unwrap();
 }
