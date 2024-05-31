@@ -18,6 +18,7 @@ use tracing_subscriber::prelude::*;
 use tracing_flame::{FlameLayer, FlushGuard};
 use tracing_subscriber::{EnvFilter, Registry};
 use std::io::BufWriter;
+use tokio::runtime::Builder;
 use tracing::{Level, span};
 use tracing::span::Entered;
 
@@ -127,8 +128,22 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     //flame::end(format!("read_file_and_upload_single_part: {}",i));
     //println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 }
-#[tokio::main]
-async fn main() {
+
+
+fn main() {
+    // Create a custom Tokio runtime with a specified number of worker threads
+    let runtime = Builder::new_multi_thread()
+        .worker_threads(240) // Specify the number of worker threads
+        .enable_all()
+        .build()
+        .expect("Failed to create Tokio runtime");
+
+    // Use the custom runtime to run your async code
+    runtime.block_on(async_main());
+}
+
+
+async fn async_main() {
 
 
     let file = File::create("flamegraph.folded").expect("Unable to create flamegraph output file");
