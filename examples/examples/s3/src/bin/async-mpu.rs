@@ -4,7 +4,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::env::args;
 use std::fmt::Debug;
 use futures::future::join_all;
-use async_std::task;
+//use async_std::task;
 use aws_sdk_s3::operation::{create_multipart_upload::CreateMultipartUploadOutput};
 use aws_sdk_s3::types::{CompletedMultipartUpload, CompletedPart};
 use aws_sdk_s3::{ Client as S3Client, Client};
@@ -30,7 +30,9 @@ lazy_static! {
 
 
 
+#[tracing::instrument]
 async fn read_file_and_upload_single_part (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
+
 
     let span_1 = span!(Level::INFO, "reading and uploading all parts for a given thread", thread_id = i);
 //    span_1.record("Thread ID", &i);
