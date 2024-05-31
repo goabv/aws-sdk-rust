@@ -23,8 +23,9 @@ lazy_static! {
 }
 
 
-#[flame]
+
 async fn read_file_segment (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
+
 
     let mut part_size = part_size;
     let last_part_size = last_part_size;
@@ -101,6 +102,7 @@ async fn read_file_segment (i: usize, path: String, starting_part_number: usize,
 #[tokio::main]
 async fn main() {
 
+    flame::start("compute");
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
 
     let args: Vec<String> = args().collect();
@@ -211,4 +213,7 @@ async fn main() {
         .unwrap();
 
     eprintln!("{:?}", start.elapsed());
+    flame::end("compute");
+    flame::dump_html(&mut std::fs::File::create("~/tempfile/flamegraph.html").unwrap()).unwrap();
+
 }
