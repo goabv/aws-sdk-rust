@@ -27,7 +27,7 @@ lazy_static! {
 async fn read_file_and_upload_single_part (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
 
-    flame::start("read_file_and_upload_single_part");
+    flame::start(format!("read_file_and_upload_single_part: {}",i));
     let mut part_size = part_size;
     let last_part_size = last_part_size;
     let mut thread_file = File::open(&path).expect("Unable to open file");
@@ -42,7 +42,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     let mut part_counter:usize = 1;
 
     while (part_counter <= num_parts_thread){
-        flame::start("reading one fle offset");
+        flame::start(format!("reading part {} on thread id {}",part_counter,i));
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
         let byte_stream:ByteStream;
@@ -75,9 +75,9 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         else {
             byte_stream = ByteStream::from(contents);
         }
-        flame::end("reading one file offset");
+        flame::end(format!("reading part {} on thread id {}",part_counter,i));
 
-        flame::start("uploading part");
+        flame::start(format!("uploading part {} on thread id {}",part_counter,i));
         let start_upload_part_res = std::time::Instant::now();
         let upload_part_res = client
             .upload_part()
@@ -97,12 +97,12 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
                 .build(),
         );
 
-        flame::end("uploading part");
+        flame::end(format!("uploading part {} on thread id {}",part_counter,i));
         end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
         part_counter = part_counter + 1;
         part_number = part_number + 1;
     }
-    flame::end("read_file_and_upload_single_part");
+    flame::end(format!("read_file_and_upload_single_part: {}",i));
     //println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 }
 #[tokio::main]
