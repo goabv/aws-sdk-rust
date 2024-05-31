@@ -19,6 +19,7 @@ use tracing_flame::{FlameLayer, FlushGuard};
 use tracing_subscriber::{EnvFilter, Registry};
 use std::io::BufWriter;
 use tracing::{Level, span};
+use tracing::span::Entered;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -31,8 +32,10 @@ lazy_static! {
 
 async fn read_file_and_upload_single_part (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
-    let span_1 = span!(Level::INFO, "reading and uploading all parts for a given thread:", thread_id = i);
-    let _enter_1 = span_1.enter();
+    let span_1 = span!(Level::INFO, "reading and uploading all parts for a given thread");
+    span_1.record("Thread ID", &i);
+    let _span_enter_1 = span_1.enter();
+
     //tracing::info!(thread = i,"start read_file_and_upload_single_part");
     let mut part_size = part_size;
     let last_part_size = last_part_size;
@@ -48,9 +51,8 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     let mut part_counter:usize = 1;
 
     while (part_counter <= num_parts_thread){
-        let span_2 = span!(Level::INFO, "reading single part from file");
-        span_2.record("thread_id",&i);
-        let _enter_2 = span_2.enter();
+        let _enter_2 = span!(Level::INFO, "reading single part from file").entered();
+        //span_2.record("thread_id",&i);
 
         //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
         let mut read_total: usize = 0;
