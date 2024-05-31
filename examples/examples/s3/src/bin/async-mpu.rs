@@ -84,7 +84,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         }
         //tracing::info!(thread = i,part_count=part_counter,"end reading file segment");
         //flame::end(format!("reading part {} on thread id {}",part_counter,i));
-        let span_2 = span_2.exit();
+        //let span_2 = span_2.exit();
         let span_3 = span!(Level::INFO, "actual part upload call", start_async_thread = i, part_count=part_counter).entered();
 
         //tracing::info!(thread = i,part_count=part_counter,"start uploading part");
