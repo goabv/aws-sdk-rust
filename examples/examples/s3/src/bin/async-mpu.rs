@@ -112,7 +112,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
         part_counter = part_counter + 1;
         part_number = part_number + 1;
-        tracing::info!(thread = i,part_count=part_counter,"end uploading part");
+        //tracing::info!(thread = i,part_count=part_counter,"end uploading part");
     }
     //tracing::info!(thread = i,"end read_file_and_upload_single_part");
     //flame::end(format!("read_file_and_upload_single_part: {}",i));
