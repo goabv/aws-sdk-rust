@@ -1,3 +1,4 @@
+use std::env;
 use jemallocator::Jemalloc;
 use std::fs::{metadata, File};
 use std::io::{Read, Seek, SeekFrom};
@@ -28,9 +29,6 @@ static GLOBAL: Jemalloc = Jemalloc;
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
 }
-
-
-
 
 async fn read_file_and_upload_single_part (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
@@ -135,22 +133,12 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
 }
 
 
-fn main() {
-    // Create a custom Tokio runtime with a specified number of worker threads
-    let runtime = Builder::new_multi_thread()
-        .worker_threads(960) // Specify the number of worker threads
-        .enable_all()
-        .build()
-        .expect("Failed to create Tokio runtime");
-
-    // Use the custom runtime to run your async code
-    runtime.block_on(async_main());
-}
 
 
+#[tokio::main]
 async fn async_main() {
 
-
+    env::set_var("ASYNC_STD_THREAD_COUNT", "960");
     let file = File::create("flamegraph.folded").expect("Unable to create flamegraph output file");
     let flame_layer = FlameLayer::new(BufWriter::new(file));
 
