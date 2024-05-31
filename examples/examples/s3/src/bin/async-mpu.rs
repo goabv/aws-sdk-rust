@@ -136,7 +136,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
 
 
 #[tokio::main]
-async fn async_main() {
+async fn main() {
 
     env::set_var("ASYNC_STD_THREAD_COUNT", "960");
     let file = File::create("flamegraph.folded").expect("Unable to create flamegraph output file");
