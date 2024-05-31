@@ -16,6 +16,7 @@ use tracing_subscriber;
 use tracing_subscriber::prelude::*;
 use tracing_flame::{FlameLayer, FlushGuard};
 use tracing_subscriber::{EnvFilter, Registry};
+use std::io::BufWriter;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -118,7 +119,9 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
 async fn main() {
 
 
-    let flame_layer = FlameLayer::default();
+    let file = File::create("flamegraph.folded").expect("Unable to create flamegraph output file");
+    let flame_layer = FlameLayer::new(BufWriter::new(file));
+
     let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
     let env_filter = EnvFilter::new("info");
 
@@ -128,9 +131,9 @@ async fn main() {
         .with(env_filter);
 
     tracing::subscriber::set_global_default(subscriber).expect("Could not set global default subscriber");
-
+    //let _flush_guard = tracing_flame::FlushGuard::new("flamegraph.folded");
     tracing::info!("Starting application");
-    let _flush_guard = FlushGuard::new("flamegraph.folded");
+
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
 
     let args: Vec<String> = args().collect();
