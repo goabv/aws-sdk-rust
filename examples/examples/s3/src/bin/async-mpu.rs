@@ -47,9 +47,8 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     let mut part_counter:usize = 1;
 
     while (part_counter <= num_parts_thread){
-        let span_2 = span!(Level::INFO, "start reading and uploading single part:", i,":", part_counter);
-        let _enter_2 = span_2.enter();
-        //tracing::info!(thread = i,part_count=part_counter,"start reading file segment");
+        let span_2 = span!(Level::INFO, "start reading and uploading single part:", thread_id= i, part_count = part_counter).entered();
+                //tracing::info!(thread = i,part_count=part_counter,"start reading file segment");
         //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
@@ -83,12 +82,12 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         else {
             byte_stream = ByteStream::from(contents);
         }
-        tracing::info!(thread = i,part_count=part_counter,"end reading file segment");
+        //tracing::info!(thread = i,part_count=part_counter,"end reading file segment");
         //flame::end(format!("reading part {} on thread id {}",part_counter,i));
-        let span_3 = span!(Level::INFO, "actual part upload call", start_async_thread = i, part_count=part_counter);
-        let _enter_3 = span_3.enter();
+        let span_2 = span_2.exit();
+        let span_3 = span!(Level::INFO, "actual part upload call", start_async_thread = i, part_count=part_counter).entered();
 
-        tracing::info!(thread = i,part_count=part_counter,"start uploading part");
+        //tracing::info!(thread = i,part_count=part_counter,"start uploading part");
         //let _guard_3 = flame::start_guard(format!("uploading part {} on thread id {}",part_counter,i));
         let start_upload_part_res = std::time::Instant::now();
         let upload_part_res = client
@@ -115,7 +114,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         part_number = part_number + 1;
         tracing::info!(thread = i,part_count=part_counter,"end uploading part");
     }
-    tracing::info!(thread = i,"end read_file_and_upload_single_part");
+    //tracing::info!(thread = i,"end read_file_and_upload_single_part");
     //flame::end(format!("read_file_and_upload_single_part: {}",i));
     //println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 }
