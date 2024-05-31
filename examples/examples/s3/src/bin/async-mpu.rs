@@ -11,9 +11,9 @@ use aws_smithy_types::byte_stream::{ByteStream};
 use std::sync::Arc;
 use lazy_static::lazy_static;
 use std::sync::RwLock;
-use async_std::task::JoinHandle;
 use futures_util::AsyncWriteExt;
 use tracing_subscriber;
+use flame;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -22,6 +22,8 @@ lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
 }
 
+
+#[flame]
 async fn read_file_segment (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
     let mut part_size = part_size;
@@ -72,7 +74,6 @@ async fn read_file_segment (i: usize, path: String, starting_part_number: usize,
         }
 
         let start_upload_part_res = std::time::Instant::now();
-
         let upload_part_res = client
             .upload_part()
             .key(&key)
@@ -95,7 +96,6 @@ async fn read_file_segment (i: usize, path: String, starting_part_number: usize,
         part_counter = part_counter + 1;
         part_number = part_number + 1;
     }
-    //info!("Inside my_function");
     //println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 }
 #[tokio::main]
@@ -116,7 +116,6 @@ async fn main() {
         .try_into()
         .expect("Couldn't convert len from u64 to usize");
 
-
     let mut total_num_parts = length/part_size;
     let mut last_part_size = length%part_size;
 
@@ -134,10 +133,9 @@ async fn main() {
     let remainder_parts = total_num_parts%threads;
 
     let mut tasks = vec![];
-
     let shared_config = aws_config::load_from_env().await;
-    let client : Client = S3Client::new(&shared_config);
 
+    let client : Client = S3Client::new(&shared_config);
     let bucket_name = "test-bucket-goyvabhi".to_string();
     let key = "test.dat".to_string();
 
@@ -156,6 +154,7 @@ async fn main() {
 
     let mut offset: usize= 0;
     let mut starting_part_number = 1;
+
     for i in 0..threads {
         //let client = Arc::clone(&client);
         let client = client.clone();
@@ -170,9 +169,8 @@ async fn main() {
         if (i+1==threads){
             last_part_size_for_thread = last_part_size;
         }
-        //info!("Inside main");
-        println!("Thread Number: {}, num_parts_thread {}, part_size {}, last_part_size_for_thread {}, chunk_size {}, offset {}",i,num_parts_thread,part_size,last_part_size_for_thread,chunk_size,offset);
 
+        println!("Thread Number: {}, num_parts_thread {}, part_size {}, last_part_size_for_thread {}, chunk_size {}, offset {}",i,num_parts_thread,part_size,last_part_size_for_thread,chunk_size,offset);
         let task = task::spawn(read_file_segment(
                 i,
                 path.to_string(),
@@ -187,8 +185,6 @@ async fn main() {
                 key.to_string(),
                 upload_id
             ));
-
-
         tasks.push(task);
         offset = offset + (num_parts_thread*part_size);
         starting_part_number = starting_part_number + num_parts_thread;
@@ -216,4 +212,3 @@ async fn main() {
 
     eprintln!("{:?}", start.elapsed());
 }
-
