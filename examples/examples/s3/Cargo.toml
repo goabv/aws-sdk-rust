@@ -42,7 +42,6 @@ aws-smithy-types= { version = "1.1.9", path = "../../../sdk/aws-smithy-types", f
 async-std = { version = "1", features = ["attributes", "tokio1"] }
 lazy_static = "1.4.0"
 tracing-flame = "0.5"
-tracing-subscriber = { version = "0.2", features = ["fmt", "env-filter"] }
 env_logger = "0.11.3"
 tracing-logstash = "0.6.1"
 hyper = "0.14.28"
