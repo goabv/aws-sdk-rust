@@ -17,6 +17,7 @@ use tracing_subscriber::prelude::*;
 use tracing_flame::{FlameLayer, FlushGuard};
 use tracing_subscriber::{EnvFilter, Registry};
 use std::io::BufWriter;
+use tracing::{Level, span};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -31,8 +32,10 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
 
 
     //let _guard_1 = flame::start_guard(format!("read_file_and_upload_single_part: {}",i));
+    //
+    let span_1 = span!(Level::INFO, "read_file_and_upload_single_part", start_async_thread = i);
+    let _enter_1 = span_1.enter();
     tracing::info!(thread = i,"start read_file_and_upload_single_part");
-
     let mut part_size = part_size;
     let last_part_size = last_part_size;
     let mut thread_file = File::open(&path).expect("Unable to open file");
@@ -47,6 +50,8 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     let mut part_counter:usize = 1;
 
     while (part_counter <= num_parts_thread){
+        let span_2 = span!(Level::INFO, "while loop for parts", start_async_thread = i, part_count=part_counter);
+        let _enter_2 = span_2.enter();
         tracing::info!(thread = i,part_count=part_counter,"start reading file segment");
         //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
         let mut read_total: usize = 0;
@@ -83,6 +88,8 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         }
         tracing::info!(thread = i,part_count=part_counter,"end reading file segment");
         //flame::end(format!("reading part {} on thread id {}",part_counter,i));
+        let span_3 = span!(Level::INFO, "actual part upload call", start_async_thread = i, part_count=part_counter);
+        let _enter_3 = span_3.enter();
 
         tracing::info!(thread = i,part_count=part_counter,"start uploading part");
         //let _guard_3 = flame::start_guard(format!("uploading part {} on thread id {}",part_counter,i));
