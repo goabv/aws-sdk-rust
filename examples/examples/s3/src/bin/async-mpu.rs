@@ -80,7 +80,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         else {
             byte_stream = ByteStream::from(contents);
         }
-        tracing::info!(thread = i,part counter=part_counter,"end reading file segment");
+        tracing::info!(thread = i,part_count=part_counter,"end reading file segment");
         //flame::end(format!("reading part {} on thread id {}",part_counter,i));
 
         tracing::info!(thread = i,part_count=part_counter,"start uploading part");
