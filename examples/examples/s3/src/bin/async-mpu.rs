@@ -53,73 +53,78 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     let mut end_upload_part_res: u128 = 0;
     let mut part_counter:usize = 1;
 
+    let span_2 = span!(Level::INFO, "reading file parts ");
+    let span_3 = span!(Level::INFO, "uploading file parts");
     while (part_counter <= num_parts_thread){
-        let _enter_2 = span!(Level::INFO, "reading single part from file").entered();
-        //span_2.record("thread_id",&i);
+        let byte_stream: ByteStream;
+        {
+            let _enter_2 = span_2.enter();
+            //span_2.record("thread_id",&i);
 
-        //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
-        let mut read_total: usize = 0;
-        let mut read_length: usize = 1;
-        let byte_stream:ByteStream;
-        let mut buffer = Vec::new();
+            //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
+            let mut read_total: usize = 0;
+            let mut read_length: usize = 1;
 
-        let mut contents = vec![0;chunk_size];
-        if (part_counter == num_parts_thread){
-            part_size=last_part_size;
-        }
+            let mut buffer = Vec::new();
 
-        let start_read = std::time::Instant::now();
-        while (read_total < part_size) && (read_length != 0) {
-            if read_total + chunk_size > part_size {
-                contents.truncate(part_size - read_total);
+            let mut contents = vec![0; chunk_size];
+            if (part_counter == num_parts_thread) {
+                part_size = last_part_size;
             }
-            read_length = thread_file.read(&mut contents).expect("Couldn't read file");
 
-            if (chunk_size!=part_size){
-                buffer.extend_from_slice(&contents[..read_length]);
+            let start_read = std::time::Instant::now();
+            while (read_total < part_size) && (read_length != 0) {
+                if read_total + chunk_size > part_size {
+                    contents.truncate(part_size - read_total);
+                }
+                read_length = thread_file.read(&mut contents).expect("Couldn't read file");
+
+                if (chunk_size != part_size) {
+                    buffer.extend_from_slice(&contents[..read_length]);
+                }
+                read_total += read_length;
+                //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
             }
-            read_total += read_length;
-            //println!("part number {}, Total Read {}, Part Size {}", part_number, read_total, part_size);
+            //println!("thread number {}, part number {}, part count {}, Total Read {}, Part Size {}", i, part_number, part_counter, read_total, part_size);
+            end_read = end_read + start_read.elapsed().as_millis();
+            //overall_read_total = overall_read_total + read_total;
+            if (chunk_size != part_size) {
+                byte_stream = ByteStream::from(buffer);
+            } else {
+                byte_stream = ByteStream::from(contents);
+            }
+            //tracing::info!(thread = i,part_count=part_counter,"end reading file segment");
+            //flame::end(format!("reading part {} on thread id {}",part_counter,i));
+            //let _enter_2 = _enter_2.exit();
         }
-        //println!("thread number {}, part number {}, part count {}, Total Read {}, Part Size {}", i, part_number, part_counter, read_total, part_size);
-        end_read = end_read +  start_read.elapsed().as_millis();
-        //overall_read_total = overall_read_total + read_total;
-        if (chunk_size!=part_size){
-            byte_stream = ByteStream::from(buffer);
-        }
-        else {
-            byte_stream = ByteStream::from(contents);
-        }
-        //tracing::info!(thread = i,part_count=part_counter,"end reading file segment");
-        //flame::end(format!("reading part {} on thread id {}",part_counter,i));
-        let _enter_2 = _enter_2.exit();
 
-        let span_3 = span!(Level::INFO, "actual part upload call", start_async_thread = i, part_count=part_counter);
-        let _enter_span_3 = span_3.enter();
+        //let span_3 = span!(Level::INFO, "actual part upload call", start_async_thread = i, part_count=part_counter);
+        {
+            let _enter_span_3 = span_3.enter();
 
-        //tracing::info!(thread = i,part_count=part_counter,"start uploading part");
-        //let _guard_3 = flame::start_guard(format!("uploading part {} on thread id {}",part_counter,i));
-        let start_upload_part_res = std::time::Instant::now();
-        let upload_part_res = client
-            .upload_part()
-            .key(&key)
-            .bucket(&bucket_name)
-            .upload_id((*upload_id).clone())
-            .body(byte_stream)
-            .part_number(part_number as i32)
-            .send()
-            .await
-            .unwrap();
-
-        GLOBAL_VEC.write().unwrap().push(
-            CompletedPart::builder()
-                .e_tag(upload_part_res.e_tag.unwrap_or_default())
+            //tracing::info!(thread = i,part_count=part_counter,"start uploading part");
+            //let _guard_3 = flame::start_guard(format!("uploading part {} on thread id {}",part_counter,i));
+            //let start_upload_part_res = std::time::Instant::now();
+            let upload_part_res = client
+                .upload_part()
+                .key(&key)
+                .bucket(&bucket_name)
+                .upload_id((*upload_id).clone())
+                .body(byte_stream)
                 .part_number(part_number as i32)
-                .build(),
-        );
+                .send()
+                .await
+                .unwrap();
 
+            GLOBAL_VEC.write().unwrap().push(
+                CompletedPart::builder()
+                    .e_tag(upload_part_res.e_tag.unwrap_or_default())
+                    .part_number(part_number as i32)
+                    .build(),
+            );
+        }
       //  flame::end(format!("uploading part {} on thread id {}",part_counter,i));
-        end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
+        //end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
         part_counter = part_counter + 1;
         part_number = part_number + 1;
         //tracing::info!(thread = i,part_count=part_counter,"end uploading part");
