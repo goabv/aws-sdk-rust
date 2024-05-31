@@ -32,7 +32,7 @@ lazy_static! {
 
 async fn read_file_and_upload_single_part (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
-    let span_1 = span!(Level::INFO, "reading and uploading all parts for a given thread", thread_id = i);
+    let span_1 = span!(Level::INFO, "reading and uploading all parts for a given thread", thread_id = 1);
 //    span_1.record("Thread ID", &i);
     let _span_enter_1 = span_1.enter();
 
