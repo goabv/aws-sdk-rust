@@ -138,7 +138,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
 fn main() {
     // Create a custom Tokio runtime with a specified number of worker threads
     let runtime = Builder::new_multi_thread()
-        .worker_threads(240) // Specify the number of worker threads
+        .worker_threads(960) // Specify the number of worker threads
         .enable_all()
         .build()
         .expect("Failed to create Tokio runtime");
