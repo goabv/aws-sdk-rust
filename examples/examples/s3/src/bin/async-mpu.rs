@@ -30,7 +30,7 @@ lazy_static! {
 
 async fn read_file_and_upload_single_part (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
-    let span_1 = span!(Level::INFO, "reading and uploading all parts", start_async_thread = i);
+    let span_1 = span!(Level::INFO, "reading and uploading all parts:", i);
     let _enter_1 = span_1.enter();
     tracing::info!(thread = i,"start read_file_and_upload_single_part");
     let mut part_size = part_size;
@@ -47,7 +47,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     let mut part_counter:usize = 1;
 
     while (part_counter <= num_parts_thread){
-        let span_2 = span!(Level::INFO, "start reading and uploading single part", thread_id=i, part_count=part_counter);
+        let span_2 = span!(Level::INFO, "start reading and uploading single part:", i,":", part_counter);
         let _enter_2 = span_2.enter();
         //tracing::info!(thread = i,part_count=part_counter,"start reading file segment");
         //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
@@ -128,7 +128,7 @@ async fn main() {
 
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_target(false)
-        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::ENTER | tracing_subscriber::fmt::format::FmtSpan::EXIT);
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::FULL);
 
     let env_filter = EnvFilter::new("info");
 
