@@ -214,6 +214,6 @@ async fn main() {
 
     eprintln!("{:?}", start.elapsed());
     flame::end("compute");
-    flame::dump_html(&mut std::fs::File::create("~/tempfile/flamegraph.html").unwrap()).unwrap();
-
+    let mut file = File::create("flamegraph.html").unwrap();
+    flame::dump_html(&mut file).unwrap();
 }
