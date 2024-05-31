@@ -13,7 +13,9 @@ use lazy_static::lazy_static;
 use std::sync::RwLock;
 use futures_util::AsyncWriteExt;
 use tracing_subscriber;
-use flame;
+use tracing_subscriber::prelude::*;
+use tracing_flame::{FlameLayer, FlushGuard};
+use tracing_subscriber::{EnvFilter, Registry};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -23,11 +25,13 @@ lazy_static! {
 }
 
 
-
+#[tracing::instrument]
 async fn read_file_and_upload_single_part (i: usize, path: String, starting_part_number: usize, num_parts_thread: usize, part_size: usize, last_part_size: usize, chunk_size: usize, offset: usize, client: Client, bucket_name: String, key: String, upload_id: Arc<String>){
 
 
-    let _guard_1 = flame::start_guard(format!("read_file_and_upload_single_part: {}",i));
+    //let _guard_1 = flame::start_guard(format!("read_file_and_upload_single_part: {}",i));
+    tracing::info!(thread = i,"start read_file_and_upload_single_part");
+
     let mut part_size = part_size;
     let last_part_size = last_part_size;
     let mut thread_file = File::open(&path).expect("Unable to open file");
@@ -42,7 +46,8 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     let mut part_counter:usize = 1;
 
     while (part_counter <= num_parts_thread){
-        let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
+        tracing::info!(thread = i,part counter=part_counter,"start reading file segment");
+        //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
         let byte_stream:ByteStream;
@@ -75,9 +80,11 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         else {
             byte_stream = ByteStream::from(contents);
         }
+        tracing::info!(thread = i,part counter=part_counter,"end reading file segment");
         //flame::end(format!("reading part {} on thread id {}",part_counter,i));
 
-        let _guard_3 = flame::start_guard(format!("uploading part {} on thread id {}",part_counter,i));
+        tracing::info!(thread = i,part counter=part_counter,"start uploading part");
+        //let _guard_3 = flame::start_guard(format!("uploading part {} on thread id {}",part_counter,i));
         let start_upload_part_res = std::time::Instant::now();
         let upload_part_res = client
             .upload_part()
@@ -101,14 +108,29 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
         part_counter = part_counter + 1;
         part_number = part_number + 1;
+        tracing::info!(thread = i,part counter=part_counter,"end uploading part");
     }
+    tracing::info!(thread = i,"end read_file_and_upload_single_part");
     //flame::end(format!("read_file_and_upload_single_part: {}",i));
     //println!("Thread Number = {}, Bytes Read {}, Total File Read Time: {}, Total upload part {}, Total upload part stack push {}  ", i, overall_read_total, end_read, end_upload_part_res, end_upload_part_stack_push);
 }
 #[tokio::main]
 async fn main() {
 
-    flame::start("main");
+
+    let flame_layer = FlameLayer::default();
+    let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
+    let env_filter = EnvFilter::new("info");
+
+    let subscriber = Registry::default()
+        .with(flame_layer)
+        .with(fmt_layer)
+        .with(env_filter);
+
+    tracing::subscriber::set_global_default(subscriber).expect("Could not set global default subscriber");
+
+    tracing::info!("Starting application");
+    let _flush_guard = FlushGuard::new("flamegraph.folded");
     const MIN_PART_SIZE: usize = 8*1024*1024; //8M
 
     let args: Vec<String> = args().collect();
@@ -219,7 +241,8 @@ async fn main() {
         .unwrap();
 
     eprintln!("{:?}", start.elapsed());
-    flame::end("main");
-    let mut file = File::create("flamegraph.html").unwrap();
-    flame::dump_html(&mut file).unwrap();
+    //tracing_flame::Flush::flush().expect("Could not write flamegraph data");
+//    flame::end("main");
+  //  let mut file = File::create("flamegraph.html").unwrap();
+    //flame::dump_html(&mut file).unwrap();
 }
