@@ -22,8 +22,8 @@ use tokio::runtime::Builder;
 use tracing::{Level, span};
 use tracing::span::Entered;
 
-#[global_allocator]
-static GLOBAL: Jemalloc = Jemalloc;
+//#[global_allocator]
+//static GLOBAL: Jemalloc = Jemalloc;
 
 lazy_static! {
     static ref GLOBAL_VEC: RwLock<Vec<CompletedPart>> = RwLock::new(Vec::new());
