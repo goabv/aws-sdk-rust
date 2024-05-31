@@ -46,7 +46,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     let mut part_counter:usize = 1;
 
     while (part_counter <= num_parts_thread){
-        tracing::info!(thread = i,part counter=part_counter,"start reading file segment");
+        tracing::info!(thread = i,part_count=part_counter,"start reading file segment");
         //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
@@ -83,7 +83,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         tracing::info!(thread = i,part counter=part_counter,"end reading file segment");
         //flame::end(format!("reading part {} on thread id {}",part_counter,i));
 
-        tracing::info!(thread = i,part counter=part_counter,"start uploading part");
+        tracing::info!(thread = i,part_count=part_counter,"start uploading part");
         //let _guard_3 = flame::start_guard(format!("uploading part {} on thread id {}",part_counter,i));
         let start_upload_part_res = std::time::Instant::now();
         let upload_part_res = client
@@ -108,7 +108,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         end_upload_part_res = end_upload_part_res + start_upload_part_res.elapsed().as_millis();
         part_counter = part_counter + 1;
         part_number = part_number + 1;
-        tracing::info!(thread = i,part counter=part_counter,"end uploading part");
+        tracing::info!(thread = i,part_count=part_counter,"end uploading part");
     }
     tracing::info!(thread = i,"end read_file_and_upload_single_part");
     //flame::end(format!("read_file_and_upload_single_part: {}",i));
