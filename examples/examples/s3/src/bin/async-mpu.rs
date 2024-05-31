@@ -42,7 +42,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     let mut part_counter:usize = 1;
 
     while (part_counter <= num_parts_thread){
-        //flame::start(format!("reading part {} on thread id {}",part_counter,i));
+        flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
         let mut read_total: usize = 0;
         let mut read_length: usize = 1;
         let byte_stream:ByteStream;
@@ -77,7 +77,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         }
         //flame::end(format!("reading part {} on thread id {}",part_counter,i));
 
-        //flame::start(format!("uploading part {} on thread id {}",part_counter,i));
+        flame::start_guard(format!("uploading part {} on thread id {}",part_counter,i));
         let start_upload_part_res = std::time::Instant::now();
         let upload_part_res = client
             .upload_part()
