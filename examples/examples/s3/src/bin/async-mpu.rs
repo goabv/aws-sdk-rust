@@ -221,22 +221,8 @@ async fn main() {
 
         println!("Thread Number: {}, num_parts_thread {}, part_size {}, last_part_size_for_thread {}, chunk_size {}, offset {}",i,num_parts_thread,part_size,last_part_size_for_thread,chunk_size,offset);
 
-        let task = read_file_and_upload_single_part(
-            i,
-            path.to_string(),
-            starting_part_number,
-            num_parts_thread,
-            part_size,
-            last_part_size_for_thread,
-            chunk_size,
-            offset,
-            client,
-            bucket_name.to_string(),
-            key.to_string(),
-            upload_id
-        );
 
-        /*let task = tokio::task::(read_file_and_upload_single_part(
+        let task = tokio::task::spawn(read_file_and_upload_single_part(
                 i,
                 path.to_string(),
                 starting_part_number,
@@ -251,7 +237,6 @@ async fn main() {
                 upload_id
             ));
 
-         */
         tasks.push(task);
         offset = offset + (num_parts_thread*part_size);
         starting_part_number = starting_part_number + num_parts_thread;
