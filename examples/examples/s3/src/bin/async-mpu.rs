@@ -75,7 +75,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         else {
             byte_stream = ByteStream::from(contents);
         }
-        flame::end("reading one fle offset");
+        flame::end("reading one file offset");
 
         flame::start("uploading part");
         let start_upload_part_res = std::time::Instant::now();
@@ -220,6 +220,6 @@ async fn main() {
 
     eprintln!("{:?}", start.elapsed());
     flame::end("main");
-    //let mut file = File::create("flamegraph.html").unwrap();
-    //flame::dump_html(&mut file).unwrap();
+    let mut file = File::create("flamegraph.html").unwrap();
+    flame::dump_html(&mut file).unwrap();
 }
