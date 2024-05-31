@@ -50,8 +50,7 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
     while (part_counter <= num_parts_thread){
         let span_2 = span!(Level::INFO, "reading single part from file");
         span_2.record("thread_id",&i);
-        let _enter_2 = span_2.enter();
-                //tracing::info!(thread = i,part_count=part_counter,"start reading file segment");
+        let _enter_2 = span_2.enter()
 
         //let _guard_2 = flame::start_guard(format!("reading part {} on thread id {}",part_counter,i));
         let mut read_total: usize = 0;
@@ -88,7 +87,8 @@ async fn read_file_and_upload_single_part (i: usize, path: String, starting_part
         }
         //tracing::info!(thread = i,part_count=part_counter,"end reading file segment");
         //flame::end(format!("reading part {} on thread id {}",part_counter,i));
-        let _enter_2 = span_2.exit();
+        let _enter_2 = _enter_2.exit();
+
         let span_3 = span!(Level::INFO, "actual part upload call", start_async_thread = i, part_count=part_counter);
         let _enter_span_3 = span_3.enter();
 
